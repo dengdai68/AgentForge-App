@@ -30,7 +30,7 @@ export async function setupPluginMarketplace({page,api,root,developer,tester,man
     const saved=JSON.parse(await readFile(join(root,'plugin-install-evidence.json'),'utf8'));
     return deliveryCheck({api,root,developer,tester,fixture,plugin:saved.plugin});
   }
-  await page.goto('http://127.0.0.1:4310/marketplace');
+  await page.goto(new URL(page.url()).origin+'/marketplace');
   await page.locator('[data-install-plugin]').click();
   await page.locator('#market-source').fill('http://example.com/unsafe.git');
   assert.equal(await page.locator('[name=trusted]').count(),0);
@@ -52,7 +52,7 @@ export async function setupPluginMarketplace({page,api,root,developer,tester,man
   assert.match(await page.locator('[role=tabpanel]').textContent(),/SessionStart/);
   await page.screenshot({path:'screenshots/plugin-detail-current.png'});
   await page.locator('#modal-close').click();
-  await page.goto('http://127.0.0.1:4310/mcp-marketplace');
+  await page.goto(new URL(page.url()).origin+'/mcp-marketplace');
   for(const name of ['unselected_proof']) {
     await page.locator('[data-add-mcp]').click();
     await page.locator('#mcp-market-form [name=name]').fill(name);
@@ -70,7 +70,7 @@ export async function setupPluginMarketplace({page,api,root,developer,tester,man
   await page.locator('.mcp-json-detail').waitFor();assert.match(await page.locator('.mcp-json-detail').textContent(),/mcpServers/);
   await page.locator('#modal-close').click();
   for(const [index,member] of [developer,tester,manager].entries()) {
-    await page.goto('http://127.0.0.1:4310/agents');
+    await page.goto(new URL(page.url()).origin+'/agents');
     await page.locator(`[data-edit-agent="${member.id}"]`).click();
     await page.waitForFunction(()=>document.querySelector('[data-selection-state]')?.textContent.includes('历史任务不变'));
     assert.equal(await page.locator('#employee-mcp-json').count(),0);assert.equal(await page.locator('[data-skill]').count(),0);

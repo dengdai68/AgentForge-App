@@ -112,15 +112,11 @@ test("database paging applies task/date filters before limiting and keeps sessio
   assert.deepEqual(seen,[...Array.from({length:7},(_,i)=>`session-${i}`),"run-older","run-target"]);
 });
 
-test("real history E2E exercises the visible human completion acknowledgement", async()=>{
-  const source=await readFile(new URL("../scripts/test-history-e2e.mjs",import.meta.url),"utf8");
-  assert.match(source,/data-open-completion-confirm/);
-  assert.match(source,/modal-backdrop/);
-  assert.match(source,/completion stays unavailable before the human acknowledgement/);
-  assert.match(source,/#ack-completion/);
-  assert.match(source,/acknowledgement enables the visible completion action/);
-  assert.match(source,/await completion\.click\(\)/);
-  assert.doesNotMatch(source,/api\(`\/api\/runs\/\$\{runId\}\/confirm-completion/);
+test("real task E2E retains visible human confirmation and actual history inquiries",async()=>{
+ const source=await readFile(new URL("../scripts/test-prompt-e2e.mjs",import.meta.url),"utf8");
+ assert.match(source,/data-open-completion-confirm/);assert.match(source,/#ack-completion/);
+ assert.match(source,/confirm-completion.*isDisabled/);assert.match(source,/search_task_activity/);
+ assert.doesNotMatch(source,/api\([^\n]*confirm-completion/);
 });
 
 test("keyword search is full-text, Chinese short/literal AND, scoped, and read-only",()=>{

@@ -78,7 +78,7 @@ function cliPanel() {
 }
 test('General CLI installation needs a desktop bridge and explicit click; cancel, failure, retry and detach are truthful', async () => {
   const web = cliPanel(); await createCliInstallationUI(web.panel).refresh();
-  assert.equal(web.install.hidden, true); assert.match(web.status.textContent, /普通 Web/);
+  assert.equal(web.install.hidden, true); assert.match(web.status.textContent, /客户端宿主接口不可用/);
   let writes = 0, fail = false, cancelled = true;
   const mac = cliPanel(), value = { supported: true, canInstall: true, installed: false, commandPath: '/fixture/agentforge', profilePaths: ['/fixture/.zshrc'] };
   const ui = createCliInstallationUI(mac.panel, { getCliInstallation: async () => value, installCli: async () => {
@@ -96,7 +96,7 @@ test('General CLI installation needs a desktop bridge and explicit click; cancel
 test("General settings keeps Web separate and does not choose a Mac close default", async () => {
   const web = closePanel();
   await createClosePreferenceUI(web.panel, undefined).refresh();
-  assert.equal(web.form.hidden, true); assert.match(web.status.textContent, /macOS 客户端/);
+  assert.equal(web.form.hidden, true); assert.match(web.status.textContent, /客户端宿主接口不可用/);
   const mac = closePanel(); let writes = 0;
   const ui = createClosePreferenceUI(mac.panel, { getPreferences: async () => ({ platform: "darwin", closeMode: null }), setCloseMode: async () => { writes++; } });
   await ui.refresh();
@@ -754,7 +754,7 @@ test("settings categories are refreshable routes and configuration leaves the em
   const routeSource = app.slice(app.indexOf("function routeFromLocation()"), app.indexOf("const initialRoute"));
   for (const page of Object.keys(SETTINGS_PAGES)) {
     const route = vm.runInNewContext(`${routeSource}\nrouteFromLocation()`, { location: { pathname: `/settings/${page}`, hash: "" } });
-    assert.equal(route.view, "settings"); assert.equal(route.settingsPage, page === "cli" ? "general" : page);
+    assert.equal(route.view, "settings"); assert.equal(route.settingsPage, page);
     const hosted = vm.runInNewContext(`${routeSource}\nrouteFromLocation()`, { location: { pathname: `/settings/${page}`, hash: "" }, window: { agentforgeDesktop: {} } });
     assert.equal(hosted.settingsPage, page);
   }

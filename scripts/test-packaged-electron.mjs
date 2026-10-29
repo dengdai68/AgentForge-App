@@ -87,6 +87,12 @@ assert.match(terminalHelp.stdout, /查看具体操作参数：在命令后加 --
 assert.match(await packagedCli(['agents', 'get', '--help'], '', undefined, false), /ID：必填精确资源ID/);
 assert.doesNotMatch(terminalHelp.stdout, /典型交付流程|核心概念|JSON 输入模板|runtime\.extensionSelection/);
 console.log('PASS bundled AI CLI offline schema without a global Node/PATH installation');
+// Signing a malformed archive does not prove its entries match the frozen
+// source. Read critical resources with the bundled Node/ASAR adapter first.
+const resourcePaths = ['LICENSE', 'NOTICE', 'web/icons/application.png', 'web/login.html', 'web/login.js', 'web/settings.mjs', 'apps/electron/main.mjs', 'server/index.mjs', 'cli/main.mjs'];
+const resourceProof = await execute(executable, ['-e', `const fs=require('node:fs'),crypto=require('node:crypto'),path=require('node:path');console.log(JSON.stringify(${JSON.stringify(resourcePaths)}.map(file=>[file,crypto.createHash('sha256').update(fs.readFileSync(path.join(${JSON.stringify(join(appBundle, 'Contents/Resources/app.asar'))},file))).digest('hex')])));`], { env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' }, timeout: 30000 });
+for (const [file, hash] of JSON.parse(resourceProof.stdout)) assert.equal(hash, createHash('sha256').update(await readFile(resolve(file))).digest('hex'), `packaged resource differs from frozen source: ${file}`);
+console.log('PASS packaged application resources match the frozen source');
 // Validate the actual distribution bundle, not just its inherited Mach-O signature.
 await execute("/usr/bin/codesign", ["--verify", "--deep", "--strict", appBundle]);
 const tamperedBundle = join(evidenceRoot, "tampered.app");
@@ -913,44 +919,6 @@ try {
   assert.equal(await page.locator('head #agentforge-desktop-style').count(), 1);
   assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--desktop-presentation').trim()), 'workbench');
   assert.equal(await page.evaluate(() => typeof window.require), "undefined");
-  const webWindow = desktop.waitForEvent("window");
-  await desktop.evaluate(async ({ BrowserWindow }, origin) => {
-    const browser = new BrowserWindow({ width: 1200, height: 800, webPreferences: { nodeIntegration: false, contextIsolation: true, sandbox: true } });
-    await browser.loadURL(`${origin}/settings/general`);
-  }, ownedOrigin);
-  const webSettings = await webWindow;
-  try {
-    await webSettings.getByText("关闭窗口行为仅适用于 macOS 客户端，请在客户端中设置。", { exact: true }).waitFor();
-    assert.equal(await webSettings.locator('[data-close-form]').isVisible(), false);
-    assert.equal(await webSettings.evaluate(() => typeof window.agentforgeDesktop), "undefined");
-    assert.equal(await webSettings.locator('head #agentforge-desktop-style').count(), 0);
-    await webSettings.setViewportSize({ width: 390, height: 844 });
-    assert.equal(await webSettings.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
-    await webSettings.screenshot({ path: join(evidenceRoot, "packaged-web-general-narrow.png"), animations: "disabled" });
-    assert.equal(await webSettings.locator('[data-settings-page="cli"], [data-settings-panel="cli"]').count(), 0);
-    await webSettings.goto(`${ownedOrigin}/settings/cli`);
-    await webSettings.locator('[data-settings-panel="general"]:not([hidden])').waitFor();
-    for (const category of ["appearance", "workspace"]) {
-      await webSettings.locator(`[data-settings-page="${category}"]`).click();
-      await webSettings.locator(`[data-settings-panel="${category}"]:not([hidden])`).waitFor();
-      await webSettings.reload();
-      await webSettings.locator(`[data-settings-panel="${category}"]:not([hidden])`).waitFor();
-      assert.equal(await webSettings.locator('[data-settings-page="navigation"], [data-settings-page="data"]').count(), 0);
-      if (category === "appearance") {
-        await webSettings.locator('[data-display-option="showGroups"]').uncheck();
-        await webSettings.reload();
-        assert.equal(await webSettings.locator('[data-display-option="showGroups"]').isChecked(), false);
-      }
-      if (category === "workspace") {
-        await webSettings.locator('[data-reset-all]').click();
-        assert.equal(await webSettings.locator('#reset-data-form button[type="submit"]').isDisabled(), true);
-        await webSettings.locator('[data-cancel-reset]').click();
-      }
-      assert.equal(await webSettings.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
-      await webSettings.screenshot({ path: join(evidenceRoot, `packaged-web-${category}-narrow.png`), animations: "disabled" });
-    }
-  } finally { await webSettings.close(); }
-  console.log("PASS General settings Web-only applicability and narrow layout without desktop authority/style");
   assert.deepEqual(await page.evaluate(async () => (await fetch("/api/auth/bootstrap-status")).json()), { available: false, configured: true });
 
   const auth = await stat(storage.AGENTFORGE_AUTH_DB_PATH);

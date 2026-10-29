@@ -1,6 +1,6 @@
 // Visible, isolated directory header regression; no Provider execution.
 import assert from 'node:assert/strict';
-import { _electron as electron, chromium } from 'playwright-core';
+import { _electron as electron } from 'playwright-core';
 import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { randomBytes } from 'node:crypto';
@@ -26,7 +26,7 @@ for (let i = 0; i < 22; i++) {
 store.createTask({ title: '目录工具栏验收', objective: '仅检查列表展示，不启动执行。', teamId: store.listTeams()[0].id, workflowTemplateId: 'software_delivery' });
 store.close();
 const app = await electron.launch({ ...(packaged ? { executablePath: resolve('release/mac-arm64/AgentForge.app/Contents/MacOS/AgentForge') } : {}), args: packaged ? [] : ['apps/electron/main.mjs'], env: { ...process.env, HOME: home, AGENTFORGE_DESKTOP_DATA_ROOT: data, AGENTFORGE_LOG_DIR: join(root, 'logs') }, timeout: 60000 });
-let browser; const errors = [], evidence = { baseline, packaged, root, views: [] };
+const errors = [], evidence = { baseline, packaged, root, views: [] };
 try {
   const page = await app.firstWindow({ timeout: 60000 }); await page.waitForURL(/^http:\/\/127\.0\.0\.1:/, { timeout: 60000 }); await page.waitForLoadState('load');
   const origin = new URL(page.url()).origin;
@@ -91,9 +91,7 @@ try {
   await inspect(page, 'desktop-wide');
   await app.evaluate(({ BrowserWindow }, origin) => BrowserWindow.getAllWindows().find(window => window.webContents.getURL().startsWith(origin)).setContentSize(760, 600), origin); await page.waitForFunction(() => innerWidth === 760);
   await inspect(page, 'desktop-narrow');
-  browser = await chromium.launch({ channel: 'chrome', headless: false }); const web = await browser.newPage({ viewport: { width: 1440, height: 900 } }); await login(web);
-  await inspect(web, 'web-wide'); await web.setViewportSize({ width: 640, height: 800 }); await inspect(web, 'web-narrow');
   assert.deepEqual(errors, []); evidence.result = 'PASS'; await writeFile(join(root, 'evidence.json'), JSON.stringify(evidence, null, 2));
   console.log('PASS directory headers:', root);
 } catch (error) { console.error('Evidence root:', root); throw error; }
-finally { await browser?.close(); await app.close(); }
+finally { await app.close(); }

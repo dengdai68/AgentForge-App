@@ -1,19 +1,14 @@
 const form = document.querySelector("#login-form"), password = document.querySelector("#password"), error = document.querySelector("#login-error"), submit = form.querySelector(".submit");
-const setupGuidance = document.querySelector("#setup-guidance"), loginHelp = document.querySelector("#login-help");
-const isDesktop = navigator.userAgent.includes("AgentForgeDesktop/1");
+const setupGuidance = document.querySelector("#setup-guidance");
 function showLogin() {
   form.hidden = false;
-  loginHelp.hidden = isDesktop;
   document.querySelector(".intro").textContent = "连接你的数字团队，继续协作与交付。";
   form.username.focus();
 }
 function showUnconfigured(status = {}) {
   form.hidden = true;
-  loginHelp.hidden = true;
   setupGuidance.hidden = false;
-  document.querySelector("#source-setup-guidance").hidden = isDesktop || status.available === true;
-  document.querySelector("#desktop-setup-guidance").hidden = !isDesktop;
-  document.querySelector("#owned-setup-guidance").hidden = isDesktop || status.available !== true;
+  document.querySelector("#desktop-setup-guidance").hidden = false;
   document.querySelector("h1").textContent = "设置工作区";
   document.querySelector(".intro").textContent = "当前服务尚不能登录，请先完成管理员设置。";
 }

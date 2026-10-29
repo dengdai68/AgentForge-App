@@ -6,7 +6,6 @@ import { readFile, realpath, stat, access, mkdir, chmod } from "node:fs/promises
 import { constants } from "node:fs";
 import { extname, join, normalize, isAbsolute, parse, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadEnvFile } from "node:process";
 import hljs from "highlight.js";
 import { createStore } from "./store.mjs";
 import { executeRun, pauseRun, resumeRun, terminateRun, stopInquiries } from "./orchestrator.mjs";
@@ -14,7 +13,7 @@ import { createRunFiles } from "./run-files.mjs";
 import { hasActiveExecution } from "./runtime/registry.mjs";
 import { createAuth } from "./auth.mjs";
 import { createRuntimeConfiguration } from "./runtime/configuration.mjs";
-import { legacyDataRequiresMigration, migrationGuidance, standaloneDataRoot, standaloneStoragePaths } from "./data-home.mjs";
+import { desktopServiceStoragePaths } from "./data-home.mjs";
 import { createMarketplace } from "./runtime/marketplace.mjs";
 import { probeRuntime } from "./runtime/probe.mjs";
 import { runtimeModelCatalog, assertModelEffort } from "./runtime/model-catalog.mjs";
@@ -24,8 +23,6 @@ import { createDataReset } from "./data-reset.mjs";
 import {createPluginUpdates} from './plugin-updates.mjs';
 
 const root = fileURLToPath(new URL("..", import.meta.url));
-try { loadEnvFile(join(root, ".env")); }
-catch (error) { if (error.code !== "ENOENT") { installProcessDiagnostics("server", { instancePath: process.env.AGENTFORGE_DB_PATH || join(standaloneDataRoot(), "agentforge.sqlite") }); diagnostic("process.environment_failed", { error }); throw error; } }
 const webRoot = join(root, "web");
 const clientRoot = join(root, "client");
 const x6Bundle = join(root, "node_modules", "@antv", "x6", "dist", "x6.min.js");
@@ -35,20 +32,17 @@ const domPurifyBundle = join(root, "node_modules", "dompurify", "dist", "purify.
 const highlightStylesheet = join(root, "node_modules", "highlight.js", "styles", "github.min.css");
 const candidateBootstrapToken = process.env.AGENTFORGE_BOOTSTRAP_TOKEN;
 delete process.env.AGENTFORGE_BOOTSTRAP_TOKEN;
-const desktopChild = Boolean(candidateBootstrapToken && process.send && process.env.AGENTFORGE_DESKTOP_PORT === "0");
-const bootstrapToken = desktopChild ? candidateBootstrapToken : undefined;
-const port = desktopChild ? 0 : 4310;
-const host = desktopChild ? "127.0.0.1" : process.env.HOST || "127.0.0.1";
+if (!candidateBootstrapToken || !process.send || process.env.AGENTFORGE_DESKTOP_PORT !== "0") throw new Error("本机服务只能由 AgentForge 客户端启动；请运行 npm start 或打开应用。");
+const bootstrapToken = candidateBootstrapToken;
+const port = 0;
+const host = "127.0.0.1";
 const instanceId = randomUUID();
-const storage = standaloneStoragePaths();
+const storage = desktopServiceStoragePaths();
 const databasePath = storage.databasePath;
 installProcessDiagnostics("server", { instancePath: databasePath });
 const runFilesRoot = storage.runFilesRoot;
 const workspaceRoot = storage.workspaceRoot;
 const runtimeConfigRoot = storage.runtimeConfigRoot;
-if (!["127.0.0.1", "localhost", "::1"].includes(host) && !process.env.AGENTFORGE_PUBLIC_ORIGIN?.startsWith("https://")) throw new Error("非本机部署必须配置 HTTPS AGENTFORGE_PUBLIC_ORIGIN");
-if (!desktopChild && !process.env.AGENTFORGE_DB_PATH && await legacyDataRequiresMigration({ legacyRoot: join(root, ".data"), currentDatabasePath: databasePath }))
-  throw new Error(migrationGuidance({ legacyRoot: join(root, ".data"), targetRoot: storage.dataRoot, command: "node scripts/migrate-data-home.mjs --yes" }));
 // The default instance data root is private; explicit AGENTFORGE_* override
 // targets stay exactly as the operator configured them.
 const usesDefaultRoot = [storage.databasePath, storage.authDatabasePath, storage.runFilesRoot, storage.runtimeConfigRoot, storage.workspaceRoot].some(path => path === storage.dataRoot || path.startsWith(storage.dataRoot + sep));
@@ -670,9 +664,9 @@ async function routeApi(request, response, pathname, searchParams = new URLSearc
   return false;
 }
 
-async function serveStatic(response, pathname, desktop = false) {
+async function serveStatic(response, pathname) {
   async function presented(content, extension) {
-    if (!desktop || extension !== ".html") return content;
+    if (extension !== ".html") return content;
     const css = await readFile(join(root, "apps/electron/compact.css"), "utf8");
     return content.toString("utf8").replace("</head>", `<style id="agentforge-desktop-style">${css}</style></head>`);
   }
@@ -716,7 +710,7 @@ const server = createServer(async (request, response) => {
   if (resettingData) { sendJson(response, 503, { error: "正在清除数据，请稍后重试" }); return; }
   if (write) ++writeRequests;
   try {
-    const url = new URL(request.url || "/", "http://localhost:4310");
+    const url = new URL(request.url || "/", "http://127.0.0.1");
     if (await auth.guard(request, response, url)) return;
     const handled = await routeApi(request, response, url.pathname, url.searchParams);
     if (handled) return;
@@ -724,7 +718,7 @@ const server = createServer(async (request, response) => {
       sendJson(response, 404, { error: "not_found" });
       return;
     }
-    await serveStatic(response, url.pathname, /\bAgentForgeDesktop\/1\b/.test(request.headers["user-agent"] || ""));
+    await serveStatic(response, url.pathname);
   } catch (error) {
     diagnostic("http.request_failed", { method: request.method, pathname: (request.url || "").split("?")[0], error });
     sendJson(response, error instanceof RequestBodyTooLargeError ? 413 : 400, { error: error.message || "请求处理失败" });
@@ -733,12 +727,10 @@ const server = createServer(async (request, response) => {
 
 server.listen(port, host, () => {
   const listeningPort = server.address().port;
-  authOptions.origins = desktopChild
-    ? [`http://127.0.0.1:${listeningPort}`]
-    : [...new Set(["http://127.0.0.1:4310", "http://localhost:4310", ...(process.env.AGENTFORGE_PUBLIC_ORIGIN ? [process.env.AGENTFORGE_PUBLIC_ORIGIN] : [])])];
+  authOptions.origins = [`http://127.0.0.1:${listeningPort}`];
   auth = createAuth(authOptions);
   console.log(`AgentForge is running at http://${host}:${listeningPort}`);
-  if (desktopChild) process.send({ type: "agentforge-ready", port: listeningPort, instanceId });
+  process.send({ type: "agentforge-ready", port: listeningPort, instanceId });
   communications.recover();
   pluginUpdates.start();
   communications.poll().catch(error => diagnostic("communication.recovery_error", { error }));
@@ -753,6 +745,7 @@ server.listen(port, host, () => {
 
 const managerPatrolIntervalMs = 5 * 60 * 1000;
 server.on('close',()=>pluginUpdates.stop());
+process.once('disconnect',()=>process.kill(process.pid,'SIGTERM'));
 for(const signal of ['SIGTERM','SIGINT'])process.once(signal,()=>{
   // Abort owned Git work before preserving the service's exit semantics.
   const finish=()=>process.exit(signal==='SIGINT'?130:143);

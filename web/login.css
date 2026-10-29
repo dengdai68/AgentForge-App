@@ -21,8 +21,5 @@ button { cursor:pointer; font:inherit; }button:disabled { cursor:wait; opacity:.
 .setup-guidance h2 { margin:0 0 8px; font-size:17px; }
 .setup-guidance p { margin:8px 0; color:var(--muted); }
 .setup-guidance a { display:inline-block; margin-top:8px; color:var(--ink); font-weight:600; text-underline-offset:4px; }
-.client-download { margin-top:24px; }
-.client-download a { display:inline-block; padding:6px 0; color:var(--ink); font-size:14px; font-weight:600; text-underline-offset:4px; }
-.client-download p { margin:4px 0 0; color:var(--muted); font-size:12px; line-height:1.7; }
 .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
 @media(max-width:480px) { body { padding:16px; }.login-card { padding:28px 24px; } }

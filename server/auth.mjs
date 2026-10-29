@@ -30,8 +30,8 @@ async function credentials(request) {
   for await (const chunk of request) { body += chunk; if (Buffer.byteLength(body) > 4096) throw new Error("invalid_body"); }
   return JSON.parse(body);
 }
-export function createAuth({ databasePath, origins = ["http://127.0.0.1:4310", "http://localhost:4310"], bootstrapToken = "", now = Date.now }) {
-  if (!origins.length || origins.some(value => {
+export function createAuth({ databasePath, origins = [], bootstrapToken = "", now = Date.now }) {
+  if (!Array.isArray(origins) || origins.some(value => {
     const url = new URL(value);
     return value !== url.origin || !["https:", "http:"].includes(url.protocol) || (url.protocol === "http:" && !["localhost", "127.0.0.1", "[::1]"].includes(url.hostname));
   })) throw new Error("认证 origin 必须为精确 HTTPS 地址，HTTP 仅允许 loopback");
@@ -161,7 +161,7 @@ export function createAuth({ databasePath, origins = ["http://127.0.0.1:4310", "
       if (request.method === "POST" && path === "/api/auth/login") {
         if (!consumeAttempt(request.socket.remoteAddress || "unknown")) { response.setHeader("Retry-After", "900"); json(response, 429, { error: "尝试过于频繁，请 15 分钟后重试" }); return true; }
         const admin = account();
-        if (!admin) { json(response, 503, { error: "管理员尚未设置。请先进入启动当前服务的 AgentForge 项目目录，再运行 npm run auth:setup。" }); return true; }
+        if (!admin) { json(response, 503, { error: "管理员尚未设置。请在客户端选择「导航 → 首页 / 重新连接」，继续应用内首次设置。" }); return true; }
         let input;
         try { input = await credentials(request); } catch { json(response, 400, { error: "无效登录请求" }); return true; }
         if (!input || typeof input.username !== "string" || typeof input.password !== "string" || input.password.length > 128) { json(response, 401, { error: "用户名或密码错误" }); return true; }

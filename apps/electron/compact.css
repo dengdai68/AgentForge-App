@@ -453,7 +453,6 @@ body:has(.login-card) { background:var(--bg); }
 }
 }
 /* Task inventory and file readers share the workbench's restrained hierarchy. */
-html .client-download { display:none; }
 html #tasks-view .task-search-form { gap:8px; padding:4px 0 14px; }
 html #tasks-view .task-search-form input,html #tasks-view .task-search-form select { min-height:32px; height:32px; padding:5px 9px; font-size:12px; border-radius:5px; }
 html #tasks-view .task-search-form button { min-height:32px; }

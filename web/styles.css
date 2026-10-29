@@ -137,7 +137,6 @@ button { cursor:pointer; }
 .nav-item.active .nav-count { color:var(--lime); background:rgba(198,243,106,.1); }
 .nav-hint { margin-left:6px; color:#e0a45c; font:9px 'DM Mono',monospace; }
 .sidebar-spacer { flex:1; min-height:36px; }
-.client-download { flex-shrink:0; text-decoration:none; margin-bottom:4px; }
 .main-content:has(#workspace-view.active) > .topbar { display:none; }
 #tasks-view { padding-top:16px; }
 #tasks-heading { justify-content:space-between; }

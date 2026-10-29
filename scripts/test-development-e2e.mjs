@@ -5,7 +5,7 @@ import { promisify } from "node:util";
 import { mkdir, mkdtemp, writeFile, readFile, symlink, stat } from "node:fs/promises";
 import { randomBytes, createHash } from "node:crypto";
 import { resolve, join, dirname, basename } from "node:path";
-import { chromium, _electron as electron } from "playwright-core";
+import { _electron as electron } from "playwright-core";
 import { createStore } from "../server/store.mjs";
 import { createAuth } from "../server/auth.mjs";
 import { setupMarketplace } from "./marketplace-e2e.mjs";
@@ -13,14 +13,12 @@ import { preparePluginFixture, setupPluginMarketplace } from "./plugin-e2e.mjs";
 import { loadLoginShellEnvironment } from "../apps/electron/login-shell-env.mjs";
 import { setupCliConfiguration } from "./cli-e2e.mjs";
 
-let origin = "http://127.0.0.1:4310";
+let origin;
 await mkdir(resolve(".data"), { recursive: true });
 await mkdir(resolve("screenshots"), { recursive: true });
 const resume = process.env.AGENTFORGE_DEVELOPMENT_E2E_RESUME;
 const cliMode = process.env.AGENTFORGE_CLI_E2E === '1';
 const taskCliMode = process.env.AGENTFORGE_TASK_CLI_E2E === '1';
-const clientMode = cliMode || taskCliMode;
-if (!clientMode && await fetch(`${origin}/api/health`).then(() => true, () => false)) throw new Error("4310 occupied; never terminate an unverified owner");
 const root = resume ? resolve(resume) : await mkdtemp(resolve(".data/development-e2e-"));
 process.env.AGENTFORGE_LOG_DIR=join(root,'logs');
 assert.equal(dirname(root), resolve(".data"));
@@ -30,8 +28,8 @@ const pluginEnv = pluginFixture?.env || {};
 const password = randomBytes(24).toString("hex");
 const auth = createAuth({ databasePath: join(root, "auth.sqlite") });
 await auth.setAdministrator("development-e2e", password); auth.close();
-const store = createStore({ databasePath: join(root, clientMode ? "agentforge.sqlite" : "state.sqlite"), workspaceRoot: join(root, "workspaces") });
-if (clientMode && !resume) store.updateWorkspaceSettings({ workspaceRoot: join(root, "workspaces") });
+const store = createStore({ databasePath: join(root, "agentforge.sqlite"), workspaceRoot: join(root, "workspaces") });
+if (!resume) store.updateWorkspaceSettings({ workspaceRoot: join(root, "workspaces") });
 const agents = store.snapshot().agents;
 const repository = { url: "https://github.com/octocat/Hello-World.git", ref: "master" };
 let developer, tester;
@@ -69,10 +67,6 @@ if (shellEnvTest) {
   assert.equal(launchEnvironment.PATH.split(':')[0], bin);
   await writeFile(join(root, 'shell-startup-evidence.json'), JSON.stringify(rows, null, 2));
 }
-const backend = clientMode ? null : spawn(process.execPath, ["server/index.mjs"], { detached: true, env: { ...launchEnvironment, AGENTFORGE_DB_PATH: join(root, "state.sqlite"), AGENTFORGE_AUTH_DB_PATH: join(root, "auth.sqlite"), AGENTFORGE_RUN_FILES_ROOT: join(root, "runs"), AGENTFORGE_WORKSPACE_ROOT: join(root, "workspaces"), AGENTFORGE_RUNTIME_CONFIG_ROOT: join(root, "runtime") }, stdio: ["ignore", "pipe", "pipe"] });
-backend?.stdout.on("data", chunk => process.stdout.write(chunk));
-backend?.stderr.on("data", chunk => process.stderr.write(chunk));
-backend?.once("exit", (code, signal) => console.log(`Isolated backend exited: code=${code}, signal=${signal}`));
 const sleep = ms => new Promise(done => setTimeout(done, ms));
 async function wait(label, check, timeout = 180000) {
   const started = Date.now(); let lastLog = 0;
@@ -83,7 +77,7 @@ async function wait(label, check, timeout = 180000) {
   }
   throw new Error(`Timed out: ${label}`);
 }
-let browser, page, desktop;
+let page, desktop;
 const errors = [];
 const taskCliEvidence = resume ? await readFile(join(root, 'task-cli-evidence.json'), 'utf8').then(JSON.parse, error => { if (error.code === 'ENOENT') return []; throw error; }) : [];
 let taskCliTaskId, clarificationAnswered = taskCliEvidence.some(row => row.command?.[0] === 'tasks' && row.command?.[1] === 'reply' && row.ok && row.data?.message?.replyToMessageId);
@@ -104,7 +98,7 @@ async function taskCli(args, input, expected = 0) {
   return envelope.data;
 }
 try {
-  if (clientMode) {
+  {
     desktop = await electron.launch({ args: ["apps/electron/main.mjs", `--user-data-dir=${join(root, 'browser')}`], env: { ...launchEnvironment, AGENTFORGE_DESKTOP_DATA_ROOT: root }, timeout: 60000 });
     page = await desktop.firstWindow();
     await wait('client endpoint', async () => {
@@ -132,10 +126,6 @@ try {
     if (taskCliMode && method === 'POST' && path === `/api/tasks/${taskCliTaskId}/run`) return taskCli(['tasks', 'start', taskCliTaskId]);
     const response = await fetch(origin + path, { method, headers: { Cookie: cookie, Origin: origin, "Content-Type": "application/json", Connection: "close" }, ...(body ? { body: JSON.stringify(body) } : {}) });
     assert.ok(response.ok, `${path}: ${response.status}`); return response.json();
-  }
-  if (!clientMode) {
-    browser = await chromium.launch({ channel: "chrome", headless: false });
-    page = await browser.newPage({ viewport: { width: 1440, height: 960 } });
   }
   page.on("pageerror", error => errors.push(error.message));
   await page.goto(`${origin}/login`);
@@ -354,13 +344,10 @@ try {
   console.log(`PASS real development E2E: ${root}`);
 } catch (error) {
   console.error("Browser errors:", errors);
-  console.error("Isolated backend state:", backend && { exitCode: backend.exitCode, signalCode: backend.signalCode, killed: backend.killed });
   await page?.screenshot({ path: join(root, "failed-page.png") }).catch(() => {});
   throw error;
 } finally {
   pluginFixture?.close();
-  await browser?.close();
   await desktop?.close();
   store.close();
-  if (backend) { try { process.kill(-backend.pid, "SIGTERM"); } catch { backend.kill("SIGTERM"); } }
 }

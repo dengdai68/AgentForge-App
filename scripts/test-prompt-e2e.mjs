@@ -1,12 +1,12 @@
 // Opt-in real Provider acceptance: native memory, system instruction updates,
 // clarification blocking, independently tested code and visible human sign-off.
 import assert from 'node:assert/strict';
-import { _electron as electron, chromium } from 'playwright-core';
+import { _electron as electron } from 'playwright-core';
 import { mkdtemp, mkdir, writeFile, readFile, readdir } from 'node:fs/promises';
 import { resolve, join, dirname, basename } from 'node:path';
 import { homedir } from 'node:os';
 import { randomBytes } from 'node:crypto';
-import { execFileSync, fork } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { createStore } from '../server/store.mjs';
 import { createAuth } from '../server/auth.mjs';
 import { tomlValue } from '../server/runtime/extensions.mjs';
@@ -49,25 +49,12 @@ const flow = store.listWorkflowTemplates().find(item => item.name === '实现与
 const existingTask = resume && store.listTasks().find(item => item.title.startsWith('PROMPT-E2E｜'));
 const existingRun = existingTask && store.listRuns().find(item => item.taskId === existingTask.id);
 const chats = [cc, codex].map(agent => ({ agent, chat: store.openCommunication({ kind: 'agent', targetId: agent.id }) })); store.close();
-const web = process.env.AGENTFORGE_PROMPT_E2E_WEB === '1';
-if (packaged && web) throw new Error('Packaged acceptance must use the real Electron window, not Web mode');
-let app, browser, backend, webOrigin;
-if (web) {
-  backend = fork(resolve('server/index.mjs'), [], { env: { ...process.env, HOME: home, CLAUDE_CONFIG_DIR: process.env.CLAUDE_CONFIG_DIR || join(homedir(), '.claude'), HOST: '127.0.0.1', AGENTFORGE_DESKTOP_PORT: '0', AGENTFORGE_BOOTSTRAP_TOKEN: randomBytes(32).toString('hex'), AGENTFORGE_DB_PATH: join(data, 'agentforge.sqlite'), AGENTFORGE_AUTH_DB_PATH: join(data, 'auth.sqlite'), AGENTFORGE_WORKSPACE_ROOT: join(root, 'work'), AGENTFORGE_RUN_FILES_ROOT: join(data, 'agentforge-runs'), AGENTFORGE_RUNTIME_CONFIG_ROOT: join(data, 'runtime-configs'), AGENTFORGE_LOG_DIR: join(root, 'web-logs') }, stdio: ['ignore', 'pipe', 'pipe', 'ipc'] });
-  webOrigin = await new Promise((done, reject) => {
-    const timer = setTimeout(() => reject(new Error('Isolated Web startup timeout')), 60000);
-    backend.once('exit', code => { clearTimeout(timer); reject(new Error('Isolated Web exited ' + code)); });
-    backend.stdout.on('data', chunk => { const match = String(chunk).match(/http:\/\/127\.0\.0\.1:\d+/); if (match) { clearTimeout(timer); done(match[0]); } });
-    backend.stderr.on('data', chunk => process.stderr.write(chunk));
-  });
-  browser = await chromium.launch({ channel: 'chrome', headless: true });
-} else app = await electron.launch({ ...(packaged ? { executablePath: resolve('release/mac-arm64/AgentForge.app/Contents/MacOS/AgentForge') } : {}), args: packaged ? [] : ['apps/electron/main.mjs'], env: { ...process.env, HOME: home, CLAUDE_CONFIG_DIR: process.env.CLAUDE_CONFIG_DIR || join(homedir(), '.claude'), AGENTFORGE_DESKTOP_DATA_ROOT: data, AGENTFORGE_LOG_DIR: join(root, 'logs') }, timeout: 180000 });
+let app = await electron.launch({ ...(packaged ? { executablePath: resolve('release/mac-arm64/AgentForge.app/Contents/MacOS/AgentForge') } : {}), args: packaged ? [] : ['apps/electron/main.mjs'], env: { ...process.env, HOME: home, CLAUDE_CONFIG_DIR: process.env.CLAUDE_CONFIG_DIR || join(homedir(), '.claude'), AGENTFORGE_DESKTOP_DATA_ROOT: data, AGENTFORGE_LOG_DIR: join(root, 'logs') }, timeout: 180000 });
 const previous = resume ? JSON.parse(await readFile(join(root, 'evidence.json'), 'utf8')) : null;
-const evidence = { root, surface: web ? 'headless Chrome / isolated real HTTP service' : packaged ? 'packaged Electron / real models' : 'Electron', providers: previous?.providers || {}, task: null, result: 'RUNNING', priorFailures: previous ? [...(previous.priorFailures || []), previous.error].filter(Boolean) : [] }; let page;
+const evidence = { root, surface: packaged ? 'packaged Electron / real models' : 'Electron', providers: previous?.providers || {}, task: null, result: 'RUNNING', priorFailures: previous ? [...(previous.priorFailures || []), previous.error].filter(Boolean) : [] }; let page;
 const wait = async (label, check, timeout = 900000) => { const start = Date.now(); let logged = 0; while (Date.now() - start < timeout) { const result = await check(); if (result) return result; if (Date.now() - logged > 30000) { console.log('WAIT ' + label); logged = Date.now(); } await new Promise(done => setTimeout(done, 1000)); } throw new Error('Timed out: ' + label); };
 try {
-  page = web ? await browser.newPage({ viewport: { width: 1400, height: 950 } }) : await app.firstWindow({ timeout: 180000 });
-  if (web) await page.goto(webOrigin + '/login');
+  page = await app.firstWindow({ timeout: 180000 });
   await page.waitForURL(/^http:\/\/127\.0\.0\.1:/, { timeout: 60000 }); await page.waitForLoadState('load');
   const origin = new URL(page.url()).origin;
   const api = (path, body, method = 'POST') => page.evaluate(async ({ path, body, method }) => { const r = await fetch(path, body ? { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}); const result = await r.json(); if (!r.ok) throw new Error(JSON.stringify(result)); return result; }, { path, body, method });
@@ -204,5 +191,5 @@ try {
   evidence.startupFailure={runId:failureRunId,traceId:failed.traces[0].id,originalError:failed.traces[0].error,automaticRetryStopped:true,visibleInConsole:true};
   evidence.result = 'PASS'; consoleLog('PASS real prompt acceptance: ' + root);
 } catch (error) { evidence.result = 'FAIL'; evidence.error = error.stack; throw error; }
-finally { await writeFile(join(root, 'evidence.json'), JSON.stringify(evidence, null, 2)); await app?.close(); await browser?.close(); backend?.kill('SIGTERM'); }
+finally { await writeFile(join(root, 'evidence.json'), JSON.stringify(evidence, null, 2)); await app?.close(); }
 function consoleLog(value) { console.log(value); }

@@ -5,9 +5,8 @@ node_modules/
 data/*.json
 .data/
 
-# Local credentials and environment overrides; keep the documented template.
+# Local credentials and environment files are never committed.
 .env.*
-!.env.example
 *.sqlite
 *.sqlite3
 *.sqlite-*

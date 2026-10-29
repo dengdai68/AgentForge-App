@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "project": "agentforge",
-  "distribution": "AgentForge-App is the self-contained desktop extraction from AgentForge c1277e5. npm start/dev launch Electron; server/web/client/cli are bundled local dependencies. No sibling repository imports. See docs/23-desktop-extraction.md.",
+  "distribution": "AgentForge-App is the self-contained desktop extraction from AgentForge c1277e5. Client-only: npm start/dev launch Electron; the loopback child requires IPC ownership, no standalone Web/server launch. server/web/client/cli are bundled dependencies. No sibling repository imports. See docs/23-desktop-extraction.md.",
   "purpose": "Module ownership, current contracts and change-impact requirements for the local AgentForge control plane and clients.",
   "instructions": [
     "AGENTS.md",
@@ -98,7 +98,7 @@
       "path": "cli/",
       "kind": "authenticated-client",
       "owner": "developer-experience",
-      "purpose": "Self-describing configuration and Task HTTP CLI with progressive text and explicit JSON. Catalog owns fields/help; main sends authenticated commands; output renders safe terminal text. Explicit Task execution and precise clarification replies use Store commands through HTTP; final human confirmation stays in Web/desktop. Bounded input/private sessions, no database or direct Runtime access. Packaged launcher uses bundled Electron Node.",
+      "purpose": "Self-describing configuration and Task HTTP CLI with progressive text and explicit JSON. Catalog owns fields/help; main sends authenticated commands; output renders safe terminal text. Explicit Task execution and precise clarification replies use Store commands through HTTP; final human confirmation stays in the desktop client. Bounded input/private sessions, no database or direct Runtime access. Packaged launcher uses bundled Electron Node.",
       "sourceOfTruth": [
         "docs/21-configuration-cli.md",
         "docs/14-console-authentication.md"
@@ -176,7 +176,7 @@
       "path": "server/data-home.mjs",
       "kind": "runtime",
       "owner": "server",
-      "purpose": "Own the ~/.agentforge default data home: per-instance roots (web for the standalone service), standalone storage path resolution where every AGENTFORGE_* override wins over the defaults, legacy-default detection that refuses startup instead of silently creating a fresh instance over unmigrated data, and the shared migration guidance text. Historical frozen Task/Run paths are never rewritten.",
+      "purpose": "Own the ~/.agentforge default data home: desktop instance roots, desktop child storage path resolution where every AGENTFORGE_* override wins over the defaults, desktop-only legacy detection and migration guidance. No Web data root or public-origin deployment configuration. Historical frozen Task/Run paths are never rewritten.",
       "sourceOfTruth": [
         "docs/02-system-architecture.md",
         "docs/18-electron-client.md"
@@ -293,9 +293,7 @@
       ],
       "tests": [
         "tests/history.test.mjs",
-        "scripts/test-history-e2e.mjs",
-        "scripts/verify-history-evidence.mjs",
-        "scripts/test-history-restart.mjs"
+        "scripts/test-prompt-e2e.mjs"
       ],
       "allowedDependencies": [
         "node:*",
@@ -490,7 +488,7 @@
       "workingFileDownload": "Authenticated attachment/octet-stream response streams selected current files through Run Files; transmission errors are diagnosed without attempting a second JSON response.",
       "kind": "runtime",
       "owner": "server",
-      "purpose": "Translate bounded JSON CRUD, status-only authenticated GitHub/GitLab pull-credential configuration, a guarded Electron-first-run setup route, workspace reads, message submission and explicit clarification replies, human-requested immediate retry of queued Dispatch backoffs, pause/resume/terminate, archive, recoverable Task deletion with Store-owned eligibility precheck before isolated Run-file cleanup reporting, SSE, restricted files with stable path-free Artifact read failures and frozen SHA-256/byte integrity checks, startup dispatch recovery and five-minute idle patrol into Store and Orchestrator commands; inject the private URL-to-credential resolver only into Run execution. Port remains 4310.",
+      "purpose": "Translate bounded JSON CRUD, status-only authenticated GitHub/GitLab pull-credential configuration, a guarded Electron-first-run setup route, workspace reads, message submission and explicit clarification replies, human-requested immediate retry of queued Dispatch backoffs, pause/resume/terminate, archive, recoverable Task deletion with Store-owned eligibility precheck before isolated Run-file cleanup reporting, SSE, restricted files with stable path-free Artifact read failures and frozen SHA-256/byte integrity checks, startup dispatch recovery and five-minute idle patrol into Store and Orchestrator commands; inject the private URL-to-credential resolver only into Run execution. The owning Electron process starts this loopback service on an OS-assigned port through a private IPC handshake.",
       "sourceOfTruth": [
         "docs/02-system-architecture.md",
         "docs/03-domain-model.md",
@@ -902,7 +900,7 @@
         ]
       },
       "extensionPresentation": "Employee/plugin/MCP cards with same-row search and create/install actions; source-wide plugin installation, lazy component/redacted JSON details with confirmed deletion, and searchable multi-select employee chips. Cards/details/pickers label Claude/Codex support, component applicability and exact incompatibility reasons; Runtime switching preserves but rejects incompatible choices. Empty/loading/no-match/error states occupy a separate full-width region outside the card grid. Human collaboration and communication messages align right based on sender identity only; employees stay left without changing shared projection/CLI fields. Compatibility is static, not a claim of executed account/dependency validation. Removal rules and immutable history belong to Store. Plugin details use one bounded body scroller with sticky component tabs and fixed title/actions, including long overviews; employee/plugin/MCP cards reserve stable heading/description geometry with complete fields available in details/edit. Employee plugin/MCP pickers dismiss on mouse leave, form-outside pointerdown or focus leaving the combo; repeated input clicks reopen, keyboard and candidate traversal remain available, hidden option focus returns to input. Listeners belong to the form, not global per-open document handlers; HTTP/CLI/loading contracts are unchanged.",
-      "cliPresentation": "CLI installation category/panel is host-only; ordinary browser deep links normalize to general. Task workspace text does not select a Web/Desktop target."
+      "cliPresentation": "CLI category always belongs to the client; unavailable host methods report a client error rather than selecting a browser product mode. Task workspace text does not select a Web/Desktop target."
     },
     {
       "id": "web.manual-graphs",
@@ -1014,10 +1012,10 @@
     },
     {
       "id": "scripts",
-      "workspaceFiles": "test-workspace-files.mjs validates complete workspace browsing, paged lazy directories, custom workflow paths, media CHANGE/download and opt-in real Claude code delivery with independent testing and human confirmation in an isolated Web/packaged client.",
-      "pluginUpdates": "test-plugin-updates.mjs exercises actual HTTPS Git installation and production two-minute scheduling through Web/packaged UI; opt-in real Claude task verifies native updated Skill output and human confirmation. Test-only Git TLS fixture is never packaged.",
-      "mcpEditing": "test-marketplace-edit.mjs uses isolated HTTP/CLI and actual Web or packaged Electron UI to check empty teams, edit/cancel/errors, redacted values, atomic rebinding and compatibility failures. No operator data is modified.",
-      "releaseStorage": "The release workflow deletes only its exact uploaded artifact ID after successful Release publication; failed publishing retains its transfer artifact for one day. Directory-header UI regression checks no duplicate visual task title and current/archive topbar names in wide/narrow Web and desktop.",
+      "workspaceFiles": "test-workspace-files.mjs validates complete workspace browsing, paged lazy directories, custom workflow paths, media CHANGE/download and opt-in real Claude code delivery with independent testing and human confirmation in an isolated source or packaged Electron client.",
+      "pluginUpdates": "test-plugin-updates.mjs exercises actual HTTPS Git installation and production two-minute scheduling through source or packaged Electron UI; opt-in real Claude task verifies native updated Skill output and human confirmation. Test-only Git TLS fixture is never packaged.",
+      "mcpEditing": "test-marketplace-edit.mjs uses isolated HTTP/CLI and actual source or packaged Electron UI to check empty teams, edit/cancel/errors, redacted values, atomic rebinding and compatibility failures. No operator data is modified.",
+      "releaseStorage": "The release workflow deletes only its exact uploaded artifact ID after successful Release publication; failed publishing retains its transfer artifact for one day. Directory-header UI regression checks no duplicate visual task title and current/archive topbar names in wide/narrow Electron windows.",
       "viewportEvidence": "Real Provider acceptance waits for renderer viewport geometry after resizing before saving narrow-window evidence; OS window resize acknowledgement alone is not visual readiness.",
       "communicationWorkbench": "test-communication-workbench.mjs explicitly opts into real source Claude attachment-reading or controlled packaged acceptance; isolated host HOME, database and download roots, no credential copying or real-instance reset.",
       "recordPresentation": "Packaged fixture E2E checks actual running and terminal tabs, greater-than-50-event history with ordinary prompt rows, and human/employee communication accents. Source smoke waits for the initial member page before loading older records, rather than treating metadata-only prompt rows as loaded history.",
@@ -1032,7 +1030,6 @@
       "tests": [
         "tests/ai-contract.test.mjs",
         "tests/history.test.mjs",
-        "scripts/test-history-e2e.mjs",
         "scripts/test-packaged-electron.mjs",
         "scripts/test-communication-workbench.mjs",
         "scripts/test-directory-headers.mjs"

@@ -22,4 +22,4 @@
 
 每次调用在系统临时目录创建私有 socket/config，结束后清理。打包使用 Electron 内置 Node，避免依赖系统 Node；不会把管理员会话交给员工。
 
-测试见 `tests/history.test.mjs`；真实模型专项入口为 `scripts/test-history-e2e.mjs`。
+测试见 `tests/history.test.mjs`；真实模型专项入口为客户端 `scripts/test-prompt-e2e.mjs`。

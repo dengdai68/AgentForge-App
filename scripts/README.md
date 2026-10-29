@@ -1,14 +1,16 @@
 # 工程脚本
 
+客户端专用验收：源码/安装包均操作 Electron，自有服务随机端口。test-prompt-e2e 验证真实任务和历史；test-communication-workbench 验证沟通；已移除固定端口 Web 设置/历史脚本和独立浏览器分支。
+
 独立客户端源码 UI 验收按真实目录树逐级展开 docs/notes 后读取夹具，不假设工作目录仍有 docs 特殊默认展开。所有验收与构建都从 AgentForge-App 自身依赖运行，不连接原仓库服务。
 
-AGENTFORGE_WORKSPACE_REAL=1 node scripts/test-workspace-files.mjs：隔离真实Claude代码开发/独立测试，全部通过CLI配置团队、员工、工作流与任务，非docs产物和真实样例MP4。AGENTFORGE_WORKSPACE_APP指定打包app，AGENTFORGE_WORKSPACE_CLAUDE指定实际CLI；同一隔离服务分别操作Electron和Chrome的宽窄目录/CHANGE、1005项翻页、大文件下载与人类确认。不修改操作者任务或凭据，合成大小/分页数据明确为UI夹具。
+AGENTFORGE_WORKSPACE_REAL=1 node scripts/test-workspace-files.mjs：隔离真实Claude代码开发/独立测试，全部通过CLI配置团队、员工、工作流与任务，非docs产物和真实样例MP4。AGENTFORGE_WORKSPACE_APP指定打包app，AGENTFORGE_WORKSPACE_CLAUDE指定实际CLI；同一隔离服务操作Electron的宽窄目录/CHANGE、1005项翻页、大文件下载与人类确认。不修改操作者任务或凭据，合成大小/分页数据明确为UI夹具。
 
 验收脚本失败可用 AGENTFORGE_WORKSPACE_RESUME=系统临时目录内的af-workspace-case-*证据目录，继续同一真实任务的UI及人类确认；不重新创建或启动模型任务。仅接受已有失败证据的隔离夹具，原失败evidence.json保留，续验写evidence-resumed.json。
 
 node scripts/test-plugin-updates.mjs 通过本机真实 HTTPS Git 和正式120秒定时器验收插件安装与设置 UI/API/CLI、周期保存/禁用/立即执行，以及沟通最近会话默认选择。AGENTFORGE_PLUGIN_UPDATES_APP 指定真实应用包；AGENTFORGE_PLUGIN_UPDATE_TASK_REAL=1 显式调用现有 Claude 账号，AGENTFORGE_PLUGIN_UPDATE_CLAUDE 可精确指定现有 CLI，执行更新后原生 Skill 真实任务到界面人类确认，并核验控制台最近执行成员默认选择与显式选择保留。临时TLS证书/信任与数据均隔离，证据保存在输出的系统临时目录。
 
-`node scripts/test-marketplace-edit.mjs` 实际操作隔离 Web，验证空团队、MCP 编辑取消/错误/成功、脱敏值、绑定员工、CLI 更新及不兼容拒绝。指定 `AGENTFORGE_MCP_EDIT_APP=/absolute/AgentForge.app` 使用真实打包 Electron；均不调用模型、不修改操作者数据。
+`node scripts/test-marketplace-edit.mjs` 实际操作隔离 Electron，验证空团队、MCP 编辑取消/错误/成功、脱敏值、绑定员工、CLI 更新及不兼容拒绝。指定 `AGENTFORGE_MCP_EDIT_APP=/absolute/AgentForge.app` 使用真实打包 Electron；均不调用模型、不修改操作者数据。
 
 AGENTFORGE_PROMPT_E2E_REAL=1 AGENTFORGE_NATIVE_SKILLS_REAL=1 node scripts/test-prompt-e2e.mjs：通过真实界面手工安装测试插件，以 Claude/Codex 原生会话执行技能附带脚本、实际 MCP/历史查询，校验未在提示词提供的随机产物；覆盖 exec/App Server 续接、移除选择、真实代码开发/独立测试/澄清阻塞和人类确认。隔离 HOME/数据库，不修改操作者任务或凭据。
 
@@ -18,7 +20,7 @@ AGENTFORGE_PROMPT_E2E_REAL=1 AGENTFORGE_PROMPT_E2E_PACKAGED=1 node scripts/test-
 
 build-app-icon.cjs 使用 macOS sips/iconutil 从用户原始 web/icons/application.png 生成已提交 ICNS，只缩放原图，不覆盖 PNG、不重绘。临时 iconset 使用专用 mkdtemp，无浏览器、网络或操作者配置访问；修改标志后按 web/icons/README.md 重生成并验证。生成是可选开发工具，发布使用已提交资源，无新增依赖。
 
-test-directory-headers.mjs 覆盖任务操作顺序、任务/归档顶栏名称、无占位的内部语义标题、归档往返搜索保留、团队/工作流跨页搜索/空态/清空与宽窄 Web/桌面布局；test-electron.mjs 对真实 DOM 验证完整脱敏系统/本轮输入、会话 ID、无工具审计详情、人类气泡外元信息与 @成员。使用隔离数据与明确标记的展示夹具。
+test-directory-headers.mjs 覆盖任务操作顺序、任务/归档顶栏名称、无占位的内部语义标题、归档往返搜索保留、团队/工作流跨页搜索/空态/清空与宽窄 客户端布局；test-electron.mjs 对真实 DOM 验证完整脱敏系统/本轮输入、会话 ID、无工具审计详情、人类气泡外元信息与 @成员。使用隔离数据与明确标记的展示夹具。
 
 test-electron.mjs 用两个不同原生 ID、完全相同参数的 MCP 调用验证两行各自输入/输出，同时重复投递每个调用的开始/完成阶段，确认只修复单次调用重复渲染，不按参数合并真实调用。
 
@@ -26,9 +28,7 @@ test-electron.mjs 用两个不同原生 ID、完全相同参数的 MCP 调用验
 
 失败后可通过 AGENTFORGE_PROMPT_E2E_RESUME=.data/prompt-e2e-<证据目录> 续接同一隔离 Run；只允许该测试目录，保留失败记录和原生会话，通过正常消息请求经理继续，不编辑领域数据库。测试可使用正常 retry-now 命令作最多两次显式重试，不以重跑抹去失败。
 
-AGENTFORGE_PROMPT_E2E_WEB=1 使用无头 Chrome 操作独立客户端子服务（IPC、随机 loopback 端口、正常管理员登录），不占用/复用 4310；evidence.surface 明确记录浏览器而非 Electron。它验证真实共享执行链与人类确认，不替代安装包宿主验收。
-
-`node scripts/test-directory-headers.mjs` 在隔离实例操作任务、沟通、团队、工作流、员工和 MCP 六页，覆盖 Web/客户端宽窄布局及创建弹框，不启动 Provider。`AGENTFORGE_DIRECTORY_HEADERS_PACKAGED=1` 检查本地构建安装包；`AGENTFORGE_DIRECTORY_HEADERS_BASELINE=1` 仅采集改动前几何/截图，不能作为改动后断言通过。
+`node scripts/test-directory-headers.mjs` 在隔离实例操作任务、沟通、团队、工作流、员工和 MCP 六页，覆盖 客户端宽窄布局及创建弹框，不启动 Provider。`AGENTFORGE_DIRECTORY_HEADERS_PACKAGED=1` 检查本地构建安装包；`AGENTFORGE_DIRECTORY_HEADERS_BASELINE=1` 仅采集改动前几何/截图，不能作为改动后断言通过。
 
 沟通工作台验收断言顶部只出现最新/刷新、私聊无重复员工标签；群聊成员切换仍可操作且不在顶部工具栏，加载历史、折叠草稿和宽窄布局继续验证。
 
@@ -36,16 +36,9 @@ AGENTFORGE_PROMPT_E2E_WEB=1 使用无头 Chrome 操作独立客户端子服务�
 
 AGENTFORGE_CLI_E2E=1 或 AGENTFORGE_TASK_CLI_E2E=1 的真实开发验收启动独立 Electron，CLI 使用其私有 endpoint，不连接或停止 Web 4310。任务工作根预存隔离目录，真实 Provider 继续使用操作者已配置的运行环境；配置、开发、失败探针、澄清阻塞及最终人类确认均记录在隔离证据目录。
 
-员工插件/MCP 选择器回归需真实点击输入后移鼠标离开（仅 fill 不会产生 pointerleave），验证候选与 4px 间隙可穿越、复点重开、Escape/Tab 收起、方向键/Enter 选择和移除；检查隐藏候选不保留焦点，宽窄 Web/桌面均实际操作。仅 UI 行为变化不需要触发 Provider 或改变 CLI 契约。
+员工插件/MCP 选择器回归需真实点击输入后移鼠标离开（仅 fill 不会产生 pointerleave），验证候选与 4px 间隙可穿越、复点重开、Escape/Tab 收起、方向键/Enter 选择和移除；检查隐藏候选不保留焦点，宽窄 客户端均实际操作。仅 UI 行为变化不需要触发 Provider 或改变 CLI 契约。
 
-插件详情回归必须实际用滚轮到达最后一项、键盘翻页并核对底部操作，不能仅断言弹窗无溢出；覆盖 Web/桌面宽窄视口。员工长/短/空简介检查跨行卡片高度及操作相对位置，CLI 在真实隔离服务执行插件整批导入。真实插件任务的首个 Skill 来自来源内符号链接，安装后核对普通文件并要求真实员工读取其 marker；不对用户本机私有插件执行 Hook/MCP。
-
-- `run-tests.mjs`：隔离测试环境，运行 Node 测试。
-- `verify-ai-contract.mjs`、`check-module-impact.mjs`、`check-commit-message.mjs`：仓库契约、联动文件与提交格式。
-- `auth-setup.mjs`：本机交互式初始化/重置 Web 管理员。
-- `migrate-data-home.mjs`：旧默认数据路径的一次性显式搬迁。
-- `test-electron.mjs`、`test-packaged-electron.mjs`：隔离 Electron 与安装包检查。
-- 其他 `test-*-e2e.mjs`：需显式运行的真实 Provider/专项验证。
+插件详情回归必须实际用滚轮到达最后一项、键盘翻页并核对底部操作，不能仅断言弹窗无溢出；覆盖 客户端宽窄视口。员工长/短/空简介检查跨行卡片高度及操作相对位置，CLI 在真实隔离服务执行插件整批导入。真实插件任务的首个 Skill 来自来源内符号链接，安装后核对普通文件并要求真实员工读取其 marker；不对用户本机私有插件执行 Hook/MCP。
 
 命令入口见 `package.json`。测试只使用隔离数据，执行真实 Provider 的脚本可能消耗模型额度；不要指向日常实例。
 

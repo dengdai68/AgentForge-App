@@ -39,38 +39,25 @@ test("desktop first-run routing never treats unknown state as configured", async
   await assert.rejects(initialRoute("http://127.0.0.1:12345", async () => { throw new Error("timeout"); }), /timeout/);
 });
 
-test("desktop login and unconfigured fallback never expose source setup instructions", async () => {
+test("login only offers application setup and never source commands or downloads", async () => {
   const source = await readFile(new URL("../web/login.js", import.meta.url), "utf8");
-  for (const desktop of [true, false]) for (const status of [{ configured: true }, { configured: false, available: true }, { configured: false, available: false }]) {
-    const elements = new Map();
-    const get = selector => {
-      if (!elements.has(selector)) elements.set(selector, { hidden: true, focus() {}, addEventListener() {}, querySelector: get, username: { focus() {} } });
-      return elements.get(selector);
-    };
-    vm.runInNewContext(source, {
-      document: { querySelector: get }, navigator: { userAgent: desktop ? "AgentForgeDesktop/1" : "Browser" },
-      AbortSignal, fetch: async () => ({ ok: true, json: async () => status })
-    });
-    await new Promise(resolve => setImmediate(resolve));
-    if (desktop) {
-      assert.equal(get("#login-help").hidden, true);
-      assert.equal(get("#source-setup-guidance").hidden, true);
-    }
-    if (!status.configured) assert.equal(get("#desktop-setup-guidance").hidden, !desktop);
-    if (!desktop && status.available === false) assert.equal(get("#source-setup-guidance").hidden, false);
+  const html = await readFile(new URL("../web/login.html", import.meta.url), "utf8");
+  assert.doesNotMatch(source + html, /auth:setup|source-setup-guidance|owned-setup-guidance|client-download|AgentForgeDesktop/);
+  for (const status of [{configured:true},{configured:false,available:true},{configured:false,available:false}]) {
+    const nodes=new Map();const get=key=>{if(!nodes.has(key))nodes.set(key,{hidden:true,focus(){},addEventListener(){},querySelector:get,username:{focus(){}}});return nodes.get(key);};
+    vm.runInNewContext(source,{document:{querySelector:get},AbortSignal,fetch:async()=>({ok:true,json:async()=>status})});
+    await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(get("#login-form").hidden,!status.configured);
+    if(!status.configured)assert.equal(get("#desktop-setup-guidance").hidden,false);
   }
 });
 
-test("Mac download links and package lock track the release version", async () => {
+test("client package metadata is aligned without in-app client-download links", async () => {
   const manifest = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const lock = JSON.parse(await readFile(new URL("../package-lock.json", import.meta.url), "utf8"));
-  assert.equal(lock.version, manifest.version);
-  assert.equal(lock.packages[""].version, manifest.version);
-  const url = `https://github.com/dengdai68/AgentForge-App/releases/tag/v${manifest.version}`;
-  for (const page of ["index.html", "login.html"]) {
-    const html = await readFile(new URL(`../web/${page}`, import.meta.url), "utf8");
-    assert.ok(html.includes(`href="${url}"`), `${page} must link to the packaged release`);
-  }
+  assert.equal(lock.version,manifest.version); assert.equal(lock.packages[""].version,manifest.version);
+  for(const key of ["auth:setup","start:server","dev:server"])assert.equal(manifest.scripts[key],undefined);
+  for(const page of ["index.html","login.html"])assert.doesNotMatch(await readFile(new URL("../web/"+page,import.meta.url),"utf8"),/client-download|下载 Mac 客户端/);
 });
 
 test("Mac close preference is explicit, persistent and fails without changing saved state", async t => {
@@ -227,7 +214,8 @@ test("Electron renderer has no Node and only closed preference/CLI installation/
   assert.doesNotMatch(source, /insertCSS|did-finish-load/);
   const server = await readFile(new URL("../server/index.mjs", import.meta.url), "utf8");
   assert.match(server, /agentforge-desktop-style/);
-  assert.match(server, /!desktop \|\| extension !== "\.html"/);
+  assert.match(server, /if \(extension !== "\.html"\) return content/);
+  assert.doesNotMatch(server, /user-agent|PUBLIC_ORIGIN/);
   assert.ok(server.indexOf("auth.guard") < server.indexOf("await serveStatic"));
   const web = await readFile(new URL("../web/index.html", import.meta.url), "utf8");
   assert.doesNotMatch(web, /compact.css/);
@@ -489,7 +477,6 @@ test("Electron applies one component language to forms, reference and short wind
   assert.match(css, /#run-workspace \.artifact-layout \{ flex:none; height:440px; min-height:440px/);
   assert.match(css, /#run-workspace \.log-meta \{ min-width:0; white-space:normal; font:11px/);
   assert.match(css, /#run-workspace \.console-tool-call \{ display:block/);
-  assert.match(css, /html \.client-download \{ display:none/);
   const app = await readFile(new URL("../web/app.js", import.meta.url), "utf8");
   assert.match(app, /body\.className = "modal-scroll"/);
   assert.match(app, /data-task-more/);

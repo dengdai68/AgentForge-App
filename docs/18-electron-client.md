@@ -14,23 +14,22 @@
 
 沟通右侧半屏控制台使用共享 renderer，提供成员切换、真实 thinking/text/tools、提示词、失败与分页。附件用浏览器文件选择和认证 HTTP 保存到会话目录，下载保留原名；不新增通用宿主桥。compact.css 仅调整间距字号，市场头像沿用员工颜色。模型真实专项在源码隔离客户端执行，安装包另以隔离 HOME/受控 CLI 验证。
 
-任务工作根独立于应用数据：桌面、开发版与 Web 均默认 ~/agentforge，无 desktop/web 子目录；已保存工作根优先，已有任务路径不搬动。新 Task UUID 避免共享工作根的跨实例目录碰撞。CLI 源码/安装版都只发现运行中的客户端，无 --target/Web 回退；会话统一 ~/.agentforge/cli-session.json，旧安装版需重新登录。CLI 安装入口仅客户端显示。
+任务工作根独立于应用数据：安装版和开发版均默认 ~/agentforge，无 desktop/web 子目录；已保存工作根优先，已有任务路径不搬动。新 Task UUID 避免共享工作根的跨实例目录碰撞。CLI 源码/安装版都只发现运行中的客户端，无 --target/Web 回退；会话统一 ~/.agentforge/cli-session.json，旧安装版需重新登录。CLI 安装入口仅客户端显示。
 
 员工、插件/MCP 市场复用共享搜索/卡片/删除命令；桌面通过 compact.css 保持紧凑尺寸，隐藏重复页标题不产生工具栏前空白。删除确认使用现有应用弹框，不增加宿主进程桥或系统弹框。
 
-Electron 使用共享 Web 界面，宿主代码位于 `apps/electron/`。
+Electron 使用本仓库 renderer 界面，宿主代码位于 `apps/electron/`。
 
 控制台提示词按调用开始时间随分页排列，不固定在最新片段上方；活动成员使用蓝色强调。协作记录和私聊/群聊复用共享语义色，桌面保留紧凑记录，颜色不替代状态文字或领域事实。
 
 ## 运行与数据
 
-主进程启动自己的 loopback 子服务，随机端口与实例 ID 经 IPC 回传并匹配。桌面不复用或终止固定 4310 的 Web 服务。
+主进程启动自己的 loopback 子服务，随机端口与实例 ID 经 IPC 回传并匹配。子服务要求 IPC 父进程和 bootstrap 信息，父进程断开即退出，没有独立 Web 启动或部署配置。
 
 | 实例 | 默认数据根 |
 | --- | --- |
 | 安装版 | `~/.agentforge/desktop/` |
 | 源码开发版 | `~/.agentforge/desktop-dev/` |
-| 独立 Web | `~/.agentforge/web/` |
 | 日志 | `~/.agentforge/logs/<实例标识>/` |
 
 数据根包含业务 SQLite、认证数据库、Runtime 私有配置、插件/MCP 和 Run 文件。ready 前将 Electron userData/sessionData 指向数据根下的 `browser/`（Cookie、localStorage、缓存、偏好），日志与崩溃目录分别为 `electron-logs/`、`crash-dumps/`。源码测试可用 `AGENTFORGE_DESKTOP_DATA_ROOT` 隔离；工作目录设置仅影响任务文件。
@@ -43,7 +42,7 @@ Electron 使用共享 Web 界面，宿主代码位于 `apps/electron/`。
 
 窗口开启隔离与 sandbox，禁用 renderer Node。导航限定当前实例 origin；外链通过宿主处理。preload 只提供关闭偏好、CLI 安装和受限复制等封闭能力，没有通用文件/进程接口。
 
-主进程拥有确认窗口、菜单栏、关闭/退出和自有子进程。设置可选择关闭窗口退出或保留菜单栏，Cmd+Q 退出。退出会停止自有后台及正在执行的调用；Web 独立服务不受影响。
+主进程拥有确认窗口、菜单栏、关闭/退出和自有子进程。设置可选择关闭窗口退出或保留菜单栏，Cmd+Q 退出。退出会停止自有后台。
 
 启动后台前一次捕获登录 shell 环境，限时、可取消，内部启动字段受保护；日志不记录完整环境。
 
@@ -51,7 +50,7 @@ Electron 使用共享 Web 界面，宿主代码位于 `apps/electron/`。
 
 员工、插件/MCP 市场采用自适应列数的卡片；员工状态在创建/编辑均可选，扩展搜索器纵向排列。插件安装直接整批处理来源，详情上方概要、下方 Skill/Subagent/Hook 标签页；共享命令，不增加原生弹框或通用桥。
 
-共享 `web/` 的命令与数据，User-Agent 的 `AgentForgeDesktop/1` 仅控制附加 `compact.css`，不代表认证。工作流/团队长弹窗随视口调整、正文内部滚动、底部操作保持可见。
+web/ 是客户端 renderer 源码。服务始终为 HTML 加入 compact.css，不按 User-Agent 切换模式。设置始终包含 CLI 分类，宿主不可用时明确报错。
 
 控制台工具收起时显示已记录的 Bash 命令或 Read/Write 文件路径；成功 Read 展开显示 Done，Write 展开显示写入文本。摘要与正文复用受认证、完整性校验的已脱敏内容，失败与缺失信息不伪造成功。
 

@@ -11,7 +11,7 @@ import { EVENT_KIND_LABEL as KIND_LABEL, STATUS_TEXT as statusText, buildConsole
    视图：overview / tasks / teams / agents / workspace（任务空间仅从任务中心进入）。 */
 function routeFromLocation() {
   const settings = location.pathname.match(/^\/settings(?:\/(general|appearance|workspace|cli|repositories|runtime|plugins|logs))?$/);
-  if (settings) return { view: "settings", runId: null, settingsPage: settings[1] === "cli" && !globalThis.window?.agentforgeDesktop ? "general" : settings[1] || "general" };
+  if (settings) return { view: "settings", runId: null, settingsPage: settings[1] || "general" };
   const chat = location.pathname.match(/^\/communication(?:\/([^/]+))?$/);
   if (chat) return { view: "communication", runId: null, chatId: chat[1] || null };
   const match = location.pathname.match(/^\/runs\/([^/]+)$/);
@@ -741,7 +741,7 @@ function manualDetails(key) {
       ["沟通执行", "三个入口打开同一会话；communication-store 是 Store 内部命令，communication 服务驱动独立本机 CLI。群聊有 @ 定向回复，无 @ 全部活跃数字成员回复，没有默认经理。失败按成员排队重试，不阻塞其他成员；可取消待回复而不删除消息。"],
       ["写入边界", "web 只通过 HTTP 发命令；index 只做传输；Store 是唯一能改变领域状态的模块；Orchestrator 不直改内部数组。"],
       ["运行边界", "Runtime 启动本机 Claude Code（默认）或 Codex，并标准化 JSONL 事件。最终 node_result 必须被 Orchestrator 验证后才能成为交付事实。Provider 登录和模型可用性由本机配置决定。"],
-      ["登录与执行", "所有后台页面、API 和 SSE 均需单管理员登录；固定端口 4310，支持 loopback HTTP 与配置的公网 HTTPS。数字员工以本机用户权限执行，平台不设置任务级操作权限。"],
+      ["登录与执行", "客户端自带本机服务，仅监听随机 loopback 端口；页面、API 和 SSE 均需单管理员登录。数字员工以本机用户权限执行，平台不设置任务级操作权限。"],
       ["插件与 MCP", "一个员工可绑定多个插件来源仓库，分别启停并逐插件选择；来源、版本和选择持久化。更新创建新检出，历史任务保持原版本；拒绝同时启用同名插件。当前仅支持仓库内插件，不自动安装外部包。MCP 接受多服务 JSON，私有文件保存。Claude 配置不传给 Codex。"],
       ["当前限制", "这是单机单用户平台，不是多租户系统。SQLite、共享本机文件与 bypass 执行不提供租户隔离或完整审批。插件会执行代码，只有可信来源才能启用。"],
     ],

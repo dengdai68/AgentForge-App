@@ -1,6 +1,6 @@
 import { join, resolve } from "node:path";
 import { withHistoryTools } from "./history/bridge.mjs";
-import { standaloneDataRoot } from "./data-home.mjs";
+import { desktopServiceDataRoot } from "./data-home.mjs";
 import { createRunFiles } from "./run-files.mjs";
 import { runClaudeCodeCli, runCodexCli, promptSnapshot, RuntimeCancelledError, RuntimeSessionMissingError, runtimeFailureDetail, retryableRuntimeFailure, separateRuntimeSession } from "./runtime/local-cli.mjs";
 import { diagnostic, withDiagnosticContext } from "./diagnostics.mjs";
@@ -263,7 +263,7 @@ export function executeRun(store, runId, options = {}) {
   const promise = withDiagnosticContext({ source: "task", runId }, () => drainRun(store, runId, options)).finally(() => active.delete(runId));
   active.set(runId, promise); return promise;
 }
-async function drainRun(store, runId, { runFilesRoot = process.env.AGENTFORGE_RUN_FILES_ROOT || join(standaloneDataRoot(), "agentforge-runs"), resolveGitCredential = null } = {}) {
+async function drainRun(store, runId, { runFilesRoot = process.env.AGENTFORGE_RUN_FILES_ROOT || join(desktopServiceDataRoot(), "agentforge-runs"), resolveGitCredential = null } = {}) {
   const files = createRunFiles({ root: runFilesRoot, resolveGitCredential });
   try {
     let run = store.getRun(runId);

@@ -12,10 +12,9 @@
 // Usage:
 //   node scripts/migrate-data-home.mjs            # dry-run plan, no changes
 //   node scripts/migrate-data-home.mjs --yes      # execute the migration
-//   --only web|desktop|desktop-dev   limit to one instance
+//   --only desktop|desktop-dev   limit to one instance
 //   --home DIR                       override ~ (isolated rehearsal/tests)
 //   --user-data DIR                  override the packaged desktop legacy root
-//   --web-origin URL                 override the Web liveness probe (4310)
 import { cp, lstat, mkdir, readdir, readFile, rename } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
@@ -45,7 +44,6 @@ export function packagedUserDataRoot({ home = homedir(), platform = process.plat
 export function migrationInstances({ home = homedir(), userData = null } = {}) {
   const dataHome = join(home, ".agentforge");
   return [
-    { id: "web", source: join(repoRoot, ".data"), target: join(dataHome, "web") },
     { id: "desktop", source: userData || packagedUserDataRoot({ home }), target: join(dataHome, "desktop") },
     { id: "desktop-dev", source: join(repoRoot, ".data", "desktop-dev"), target: join(dataHome, "desktop-dev") }
   ];
@@ -111,9 +109,7 @@ async function probeHealth(origin, instanceId = null) {
   } catch { return false; }
 }
 
-async function assertInstanceStopped(instance, { webOrigin }) {
-  if (instance.id === "web" && await probeHealth(webOrigin))
-    throw new Error(`独立 Web 服务仍在监听 ${webOrigin}；请先停止该实例再搬迁`);
+async function assertInstanceStopped(instance) {
   try {
     const endpoint = JSON.parse(await readFile(join(instance.source, "desktop-endpoint.json"), "utf8"));
     if (endpoint && await probeHealth(endpoint.origin, endpoint.instanceId))
@@ -124,12 +120,12 @@ async function assertInstanceStopped(instance, { webOrigin }) {
   }
 }
 
-export async function migrateInstance(instance, { apply = false, stamp, webOrigin } = {}) {
+export async function migrateInstance(instance, { apply = false, stamp } = {}) {
   const report = { instance: instance.id, source: instance.source, target: instance.target, planned: [], copied: [], reused: [], backups: [], skipped: false };
   const entries = await listSourceEntries(instance.source);
   if (!entries.length) { report.skipped = true; return report; }
   for (const entry of entries) if (entry.kind === "directory") await assertNoSymlinks(join(instance.source, entry.name));
-  try { await assertInstanceStopped(instance, { webOrigin }); }
+  try { await assertInstanceStopped(instance); }
   catch (error) { if (apply) throw error; report.warning = error.message; }
   for (const entry of entries) {
     const targetPath = join(instance.target, entry.name);
@@ -165,15 +161,14 @@ export async function migrateInstance(instance, { apply = false, stamp, webOrigi
 }
 
 function parseArgs(argv) {
-  const options = { apply: false, home: homedir(), userData: null, only: null, webOrigin: "http://127.0.0.1:4310" };
+  const options = { apply: false, home: homedir(), userData: null, only: null };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === "--yes") options.apply = true;
     else if (arg === "--home") options.home = resolve(argv[++index] || "");
     else if (arg === "--user-data") options.userData = resolve(argv[++index] || "");
-    else if (arg === "--only") { options.only = argv[++index]; if (!["web", "desktop", "desktop-dev"].includes(options.only)) throw new Error("--only 仅支持 web|desktop|desktop-dev"); }
-    else if (arg === "--web-origin") options.webOrigin = argv[++index];
-    else if (arg === "--help" || arg === "-h") { console.log("用法：node scripts/migrate-data-home.mjs [--yes] [--only web|desktop|desktop-dev] [--home DIR] [--user-data DIR] [--web-origin URL]\n默认仅打印计划；--yes 才执行复制、校验与备份改名。旧数据绝不删除。"); process.exit(0); }
+    else if (arg === "--only") { options.only = argv[++index]; if (!["desktop", "desktop-dev"].includes(options.only)) throw new Error("--only 仅支持 desktop|desktop-dev"); }
+    else if (arg === "--help" || arg === "-h") { console.log("用法：node scripts/migrate-data-home.mjs [--yes] [--only desktop|desktop-dev] [--home DIR] [--user-data DIR]\n默认仅打印计划；--yes 才执行复制、校验与备份改名。旧数据绝不删除。"); process.exit(0); }
     else throw new Error(`未知参数：${arg}`);
   }
   return options;
@@ -187,7 +182,7 @@ async function main() {
   let failed = 0, acted = 0;
   for (const instance of instances) {
     try {
-      const report = await migrateInstance(instance, { apply: options.apply, stamp, webOrigin: options.webOrigin });
+      const report = await migrateInstance(instance, { apply: options.apply, stamp });
       if (report.skipped) { console.log(`- ${instance.id}：旧位置无应用数据，跳过（${instance.source}）`); continue; }
       acted += 1;
       console.log(`- ${instance.id}：${instance.source} → ${instance.target}`);

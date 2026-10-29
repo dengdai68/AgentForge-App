@@ -1,8 +1,10 @@
 # CLI
 
+本仓库仅提供客户端。CLI 配置/任务/auth 命令和参数不变，连接私有 endpoint，不提供服务器部署目标。
+
 Task 进度与帮助同步原始脱敏错误、临时故障最多三次尝试和人工恢复语义；确定性/未知错误不自动重试，不再宣称必然升级经理。
 
-工作流 artifactPaths 是规范工作目录相对文件/目录建议，可省略为空；任意业务根均可使用，不再强制docs。create/update/schema/帮助/文本标签同步；任务artifacts仍按实际不可变快照查询，大文件当前目录浏览/下载属于Web/客户端，不新增CLI越权入口。
+工作流 artifactPaths 是规范工作目录相对文件/目录建议，可省略为空；任意业务根均可使用，不再强制docs。create/update/schema/帮助/文本标签同步；任务artifacts仍按实际不可变快照查询，大文件当前目录浏览/下载属于客户端，不新增CLI越权入口。
 
 plugins 新增 updates（状态）、check-updates（立即请求异步检查）、auto-update --file settings.json（enabled布尔值和intervalMinutes整数分钟1–1440，至少一项，默认2）。帮助/schema/参数与认证HTTP、设置 → 插件更新同步；更新回执只含插件ID/原ID/名称，不倾倒其他资源，检查不会创建任务或确认完成。CLI只访问客户端，Git网络由服务处理。沟通和任务控制台的默认选中仅为 UI 行为，不更改任务/协作命令。
 
@@ -25,7 +27,7 @@ CLI 仅连接运行中的客户端；源码/安装版统一通过私有 endpoint
 
 根帮助列命令组，操作帮助列字段，`--json` 返回机器输出。登录态独立持久保存，不读取浏览器 Cookie 或 SQLite。密码仅隐藏交互输入或显式 stdin，不作命令参数。
 
-任务命令经过同一 HTTP；创建和启动分开，写入不自动重试。最终验收确认保留在 Web/桌面。完整命令和失败语义见 [CLI 指南](../docs/21-configuration-cli.md)。
+任务命令经过同一 HTTP；创建和启动分开，写入不自动重试。最终验收确认保留在 客户端。完整命令和失败语义见 [CLI 指南](../docs/21-configuration-cli.md)。
 
 共享协作投影的颜色和界面状态码不进入 CLI 输出；`tasks collaboration` 保留状态文字和原有 JSON 字段。
 

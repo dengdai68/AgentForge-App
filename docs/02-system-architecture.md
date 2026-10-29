@@ -1,8 +1,8 @@
 # 系统架构
 
-本仓库为 AgentForge App 独立客户端，完整抽取边界见 [ADR：客户端抽取](23-desktop-extraction.md)。默认 start/dev 启动 Electron，自带本机控制面与全部界面；既有独立 HTTP 入口只作为诊断和验收工具保留，不依赖原仓库服务。
+本仓库为 AgentForge App 独立客户端，完整抽取边界见 [ADR：客户端抽取](23-desktop-extraction.md)。默认 start/dev 启动 Electron，自带本机控制面与全部界面；服务要求父进程 IPC 与 bootstrap 信息，不能直接启动；父进程断开时退出。
 
-工作目录展示由 Run Files 直接读取真实任务根，取代 manifest 白名单；HTTP 按 path/offset 每页200项，Web 按需展开。工作流只提供交付位置建议，Store 校验规范相对路径，CLI同步，未提供时不填 docs。Orchestrator 采集各业务路径的有限不可变快照，CHANGE 通过只读 Git 观察已提交/未提交/未跟踪文件；大媒体不因快照上限从目录/CHANGE消失。不新增索引库、文件监控服务或自动提交。
+工作目录展示由 Run Files 直接读取真实任务根，取代 manifest 白名单；HTTP 按 path/offset 每页200项，界面按需展开。工作流只提供交付位置建议，Store 校验规范相对路径，CLI同步，未提供时不填 docs。Orchestrator 采集各业务路径的有限不可变快照，CHANGE 通过只读 Git 观察已提交/未提交/未跟踪文件；大媒体不因快照上限从目录/CHANGE消失。不新增索引库、文件监控服务或自动提交。
 
 插件定时更新决策：复用本机服务生命周期和 Node 定时器，不新增系统 cron、常驻守护进程、队列或依赖。服务运行期间默认每120000ms检查，上轮结束后安排下一轮，不重叠；开关与1–1440整数分钟周期（默认2）由 Store 持久保存，设置入口独立于插件市场，检查状态/最近结果仅为当前服务进程观察。按安装来源分组，使用真实 Git 提交及外部 ref/sha 依赖判断变化；无变化不克隆/安装、不写审计。新候选经完整校验与全部当前选择者兼容检查，再由一个 Store 事务替换该来源插件引用；失败保留该来源旧版，其他来源可继续。安装不执行来源脚本/Hook，自动检出的临时源码用后清理，已冻结安装文件不删除。重置时阻止与活动更新并发，重置后清除检查状态。
 
@@ -14,10 +14,10 @@ server/prompts.mjs 分离应用系统指令和当前输入：完整工作流仅�
 
 沟通工作台复用任务控制台 renderer 和按需内容读取器，但以 Conversation/Delivery/attempt 为归属。HTTP 接受同源认证二进制附件，Run Files 保存会话原文件和私有执行内容，Store 只保存元数据、消息关联与调用事实。控制台只在展开时按成员/50 条事件分页轮询，历史按 Map 分组，不重复扫描全事件。现有 CLI 未覆盖长期沟通，本轮不扩展 CLI 权限或命令；配置与任务协议不变。
 
-CLI 仅供客户端使用，私有 endpoint 发现与实例校验统一在 cli/client.mjs；不接受 Web/Desktop 目标，不默认连接 4310，Web 不提供安装入口。应用数据根仍隔离；默认任务根统一为 ~/agentforge，由 server/data-home.mjs 的纯路径函数供独立服务和 Electron 使用。保存的工作根和历史路径不改写。新 Task ID 使用随机 UUID，避免独立实例共享工作根时因毫秒/进程序号相同而碰撞，不增加平台子目录。
+CLI 仅供客户端使用，私有 endpoint 发现与实例校验统一在 cli/client.mjs；不接受 Web/Desktop 目标，不默认连接 4310。应用数据根仍隔离；默认任务根统一为 ~/agentforge，由 server/data-home.mjs 的纯路径函数供客户端自有服务使用。保存的工作根和历史路径不改写。新 Task ID 使用随机 UUID，避免独立实例共享工作根时因毫秒/进程序号相同而碰撞，不增加平台子目录。
 
 ```text
-Web / Electron / CLI
+Electron renderer / CLI
         │ HTTP + SSE
 server/index.mjs ─ auth.mjs
         │
@@ -30,7 +30,7 @@ server/index.mjs ─ auth.mjs
 
 ## 分层
 
-- Web/CLI 发命令和展示结果；Electron 另外拥有窗口与自有子服务。
+- 客户端界面/CLI 发命令和展示结果；Electron 另外拥有窗口与自有子服务。
 - HTTP 负责认证、路由、输入边界和资源读取。
 - Store 拥有 Task、Run、Trace、Message、Dispatch 等持久状态与命令。
 - Orchestrator 执行经理的协调决定、调用员工、投递消息和记录事实。
@@ -41,7 +41,7 @@ server/index.mjs ─ auth.mjs
 
 ## 实例
 
-独立 Web 固定监听 4310。Electron 启动独立 loopback 子服务，系统分配端口并经 IPC 回传实例 ID。桌面与 Web 数据、管理员、后台生命周期独立；关闭桌面不关闭 Web。
+Electron 自有子服务只绑定 127.0.0.1 随机端口，鉴权仅接受实际 origin。所有 HTML 始终包含客户端样式，不按 User-Agent 切换产品模式。没有独立 Web 部署入口，认证 HTTP 仅为本机客户端/CLI 所需。
 
 源码和安装版的默认数据根见 [桌面文档](18-electron-client.md)。HTTP API、静态应用、SSE 与文件资源经过同一认证入口。
 

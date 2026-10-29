@@ -1,5 +1,7 @@
 # CLI 指南
 
+本仓库仅提供客户端；首次管理员设置在应用内。CLI 继续连接客户端私有 endpoint，配置/任务/auth 命令和字段不变。
+
 任务 progress 的 lastError 保留脱敏原始错误；仅明确临时故障最多共三次尝试，确定性/未知错误停止自动重试。修复后通过客户端已有人工恢复入口继续，不自动升级或另派员工；CLI 不新增恢复权限。
 
 workflows create/update/schema/--help 的 artifactPaths 支持任意规范工作目录相对文件或目录（artifacts/media/、reports/、summary.md），缺省为空；不再限定docs或作为接纳白名单。任务artifacts可查询非docs业务快照；CLI没有当前目录浏览/下载命令，本轮不扩权。
@@ -61,7 +63,7 @@ TTY 隐藏输入密码；脚本使用显式 `--password-stdin`。没有密码命
 - `tasks message/reply`：给指定成员发消息，或精确回复待答人类问题。
 - `tasks terminate/delete`：终止后保留历史，删除须显式 `--yes` 且任务已停止。
 
-历史执行可用 `--run RUN_ID` 指定，Run 须属于任务。写消息需要已启动的 Run；回复必须匹配当前未答问题。最终任务完成由 Web/桌面的人类确认。
+历史执行可用 `--run RUN_ID` 指定，Run 须属于任务。写消息需要已启动的 Run；回复必须匹配当前未答问题。最终任务完成由 客户端的人类确认。
 
 任务输出不递归展开员工提示词或完整冻结配置，关联信息通过 ID/名称引用，按需用对应命令查询。
 

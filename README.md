@@ -23,7 +23,7 @@ npm ci
 npm start
 ```
 
-`npm start` 和 `npm run dev` 均启动桌面客户端。客户端自动启动独立 loopback 子服务，使用系统分配的端口；不依赖或复用 4310，也不需要先运行 `auth:setup`。`web/` 是随应用打包的界面源码。
+`npm start` 和 `npm run dev` 均启动桌面客户端。客户端自动启动独立 loopback 子服务，使用系统分配的端口；不依赖或复用 4310，首次设置在应用内完成。`web/` 是随应用打包的界面源码。
 
 安装版数据在 `~/.agentforge/desktop/`，源码开发版在 `~/.agentforge/desktop-dev/`；任务工作目录默认 `~/agentforge`，可在设置中修改。继续使用现有 AgentForge 应用身份和数据位置，两份安装版不会被当成两个隔离实例；测试必须使用独立 HOME/数据目录。
 
@@ -52,6 +52,6 @@ npm run package:mac:check
 
 安装包位于 `release/`。贡献说明见 [CONTRIBUTING](CONTRIBUTING.md)、[AGENTS](AGENTS.md) 和 [文档索引](docs/README.md)。GitHub Actions 在本仓库独立检查和构建，发布使用本仓库的标签与附件。
 
-`npm run start:server` / `dev:server` 是本机服务诊断入口，沿用独立服务的认证初始化与数据隔离；普通客户端使用者无需执行这些命令。
+本仓库只提供客户端；本机服务要求父进程 IPC、随机 loopback 端口与 bootstrap 信息。直接运行服务会在打开存储前拒绝，父进程断开时退出。不提供独立 Web 部署或终端管理员初始化。
 
 数字员工以当前系统用户权限执行本机操作。当前是本机单管理员 Beta，Runtime bypass 不等于沙箱；运行中的任务依赖本机服务，不具备云端高可用或多租户能力。

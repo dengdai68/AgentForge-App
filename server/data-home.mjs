@@ -1,5 +1,4 @@
-// Default persistent data home layout shared by the standalone Web service and
-// the Electron desktop host. All application-controlled mutable state lives
+// Persistent data paths for the Electron-owned local service. Mutable state lives
 // under per-instance subdirectories of ~/.agentforge; explicit environment
 // overrides and saved settings always win over these defaults.
 import { homedir } from "node:os";
@@ -7,11 +6,11 @@ import { join, resolve } from "node:path";
 import { lstat } from "node:fs/promises";
 
 export function agentforgeDataHome(home = homedir()) { return join(home, ".agentforge"); }
-export function standaloneDataRoot(home = homedir()) { return join(agentforgeDataHome(home), "web"); }
+export function desktopServiceDataRoot(home = homedir()) { return join(agentforgeDataHome(home), "desktop"); }
 export function defaultTaskWorkspaceRoot(home = homedir()) { return join(home, "agentforge"); }
 
-export function standaloneStoragePaths({ home = homedir(), env = process.env } = {}) {
-  const dataRoot = standaloneDataRoot(home);
+export function desktopServiceStoragePaths({ home = homedir(), env = process.env } = {}) {
+  const dataRoot = desktopServiceDataRoot(home);
   return {
     dataRoot,
     databasePath: env.AGENTFORGE_DB_PATH || join(dataRoot, "agentforge.sqlite"),

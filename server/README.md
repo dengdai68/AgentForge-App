@@ -20,7 +20,7 @@ Runtime 原始错误脱敏后保留，分类不替换正文；已知临时错误
 
 沟通附件由 Run Files 保存在会话 attachments 子目录，Store 只冻结引用和摘要；认证二进制上传最多 20 MiB，下载验证归属/字节/摘要/链接。调用正文和提示词在私有 .agentforge 目录，通用事件只持引用，原生会话绑定在投递尝试元数据；分页 API 供共享控制台，不制造 Task/Run。
 
-data-home.mjs 为独立服务和 Electron 提供统一的默认任务根 ~/agentforge；应用数据仍按实例隔离于 ~/.agentforge。保存的工作根优先，历史路径不搬迁。Store 新 Task ID 使用随机 UUID，避免跨实例共享根目录时同毫秒/序号碰撞；HTTP/Store 命令不扩权，CLI 仅连接客户端。
+data-home.mjs 为客户端子服务 提供统一的默认任务根 ~/agentforge；应用数据仍按实例隔离于 ~/.agentforge。保存的工作根优先，历史路径不搬迁。Store 新 Task ID 使用随机 UUID，避免跨实例共享根目录时同毫秒/序号碰撞；HTTP/Store 命令不扩权，CLI 仅连接客户端。
 
 插件安装在来源复制阶段展开同仓库/目录内的符号链接，断链、循环、越界和特殊文件精确报错且整批回滚；执行用不可变普通文件副本，运行期完整性校验不放宽。HTTP/CLI 使用同一路径，契约见 docs/15。
 
@@ -47,7 +47,7 @@ Store 拥有状态，Runtime 不直接写领域对象。平台执行员工和经
 
 工作目录 `content?download=1&path=...` 共用工作根、敏感路径和符号链接检查，以 attachment/octet-stream 流式返回完整当前文件，不受预览上限影响；传输错误进入诊断，不回写领域状态。
 
-源码 Web 固定 4310，桌面另启独立动态端口子服务。数据、认证和日志默认位于 `~/.agentforge/`。API/CLI 契约见 [文档索引](../docs/README.md)。
+服务仅由客户端 IPC 携带 bootstrap 信息启动，固定 127.0.0.1、系统随机端口、实际 origin；普通 node 直接启动在存储初始化前拒绝，父进程断开即退出。不读取 .env/HOST/PORT/公开域名，不提供独立 Web 部署。所有 HTML 加入客户端样式。
 
 认证工作目录 PUT 先验证非根绝对路径，再 mkdir 创建缺失父/子目录，核对实际位置和权限后由 Store 保存；失败保留原设置及诊断 cause，不清理目录或搬动旧任务。CLI 创建任务继续使用当前根，不新增设置命令。
 

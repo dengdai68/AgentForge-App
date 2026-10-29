@@ -12,13 +12,13 @@
 
 ## 分层与底线
 
-- Web / Electron 负责呈现与发命令；HTTP 负责认证、路由和边界校验；Store 拥有领域规则与状态；Orchestrator 通过 Store 推进执行；Runtime 只适配 Provider，不拥有领域状态。文件内容由 Run Files 管理，SQLite 只存元数据。
-- CLI 通过同一受认证 HTTP 配置资源、创建/启动任务、查询执行与协作、发送指令及精确回复澄清；不直接访问数据库、提取浏览器会话或绕过 Store。人类最终确认保留在 Web/客户端。契约见 [docs/21](docs/21-configuration-cli.md)。
+- 客户端界面 / Electron 负责呈现与发命令；HTTP 负责认证、路由和边界校验；Store 拥有领域规则与状态；Orchestrator 通过 Store 推进执行；Runtime 只适配 Provider，不拥有领域状态。文件内容由 Run Files 管理，SQLite 只存元数据。
+- CLI 通过同一受认证 HTTP 配置资源、创建/启动任务、查询执行与协作、发送指令及精确回复澄清；不直接访问数据库、提取浏览器会话或绕过 Store。人类最终确认保留在 客户端。契约见 [docs/21](docs/21-configuration-cli.md)。
 - Task/Run 记录协调状态；平台只执行员工与经理的协调决定，不做业务结果、流程完整性或内容证据校验，不自动改判或增加复核。员工可用普通文字交接；任务完成由人类显式确认。
 - 保留冻结快照、不可变事件、Trace/Artifact 历史及成员会话隔离；不按角色名称硬编码派工。角色、团队与 Task 不限制数字员工的本机操作；协议破坏须更新 `docs/03-domain-model.md` 与 CHANGELOG。
 - 认证默认拒绝；禁止泄露凭据、完整提示或未脱敏工具输出。私有配置、诊断、扩展与历史可见性按 [docs/08](docs/08-real-local-agent-runtime.md)、[14](docs/14-console-authentication.md)、[15](docs/15-employee-runtime-configuration.md)、[17](docs/17-communication.md)、[19](docs/19-agent-history.md) 执行。
 - 本机单管理员 MVP/Beta 不是多租户、生产沙箱或高可用系统；Runtime bypass 不是沙箱。Electron 保持隔离和关闭式宿主接口，不新增通用文件/进程桥；详见 [docs/18](docs/18-electron-client.md)。
-- Web 与 Electron 可有独立样式，但共享真实语义与命令；复用各自设计 tokens，保持键盘可达、窄屏可用和明确空态/错误，不另造页面级设计系统。
+- 客户端 renderer 与 Electron 宿主共享真实语义与命令；复用各自设计 tokens，保持键盘可达、窄屏可用和明确空态/错误，不另造页面级设计系统。
 
 ## 修改要求
 

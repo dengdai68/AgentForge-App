@@ -1,5 +1,7 @@
 # 测试
 
+本仓库仅验收客户端。HTTP 夹具模拟自有 IPC 子服务，不是独立 Web 产品；UI 只操作隔离 Electron，真实任务用 test-prompt-e2e，沟通用 test-communication-workbench。
+
 工作目录回归：自定义目录/根文件/大媒体的真实Git状态、任务初始提交比较、1005项分页、根读取/下载、工作流路径和重启保留；路径穿越、内部凭据、链接拒绝。真实开发端到端通过CLI配置、Claude实现与独立测试、非docs产物/媒体、Web与打包界面、人类确认。
 
 plugin-updates.test.mjs 使用本机 HTTPS Git smart-HTTP 真仓库验证提交变化、同版本号更新、原生文件/员工引用、删除项不重装、MCP不重复安装、兼容失败保留和恢复、来源隔离、取消/单飞/持久开关及周期校验。settings/communication 测试覆盖设置草稿、最近执行成员与最近更新会话选择。plugin-git-fixture.mjs 的临时TLS信任仅用于测试进程，不进入安装包。AGENTFORGE_PLUGIN_UPDATE_SCHEDULE_REAL=1 可实等120秒；普通单测仅缩短注入时钟间隔。

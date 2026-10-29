@@ -44,7 +44,7 @@ export function createClosePreferenceUI(panel, desktop) {
   }
   async function refresh() {
     if (disposed || panel.hidden || busy || dirty()) return;
-    if (!desktop) { form.hidden = true; status.textContent = "关闭窗口行为仅适用于 macOS 客户端，请在客户端中设置。"; return; }
+    if (!desktop) { form.hidden = true; status.textContent = "客户端宿主接口不可用，请重新打开应用。"; return; }
     const id = ++request; busy = true; sync(); retry.hidden = true;
     try {
       const value = await desktop.getPreferences();
@@ -86,7 +86,7 @@ export function createCliInstallationUI(panel, desktop) {
     if (disposed || busy || (!install && panel.hidden)) return;
     if (!desktop?.getCliInstallation || !desktop?.installCli) {
       button.hidden = true; retry.hidden = true;
-      status.textContent = '请在 Mac 客户端的「设置 → 命令行 CLI」安装 CLI；普通 Web 不会修改本机 Shell。'; return;
+      status.textContent = '客户端宿主接口不可用，请重新打开应用后安装 CLI。'; return;
     }
     busy = true; sync(); status.textContent = install ? '请在客户端确认安装…' : '正在检查 CLI 安装…';
     try {
@@ -379,7 +379,7 @@ export function createSettingsUI({ api, notify, navigate, getPreferences, update
   function changePreferences(value) {
     const saved = updatePreferences(value);
     const status = root.querySelector("[data-preferences-status]");
-    status.textContent = saved ? "已自动保存到当前浏览器或客户端。" : "仅本次生效：当前环境无法保存偏好，刷新后可能恢复默认。";
+    status.textContent = saved ? "已自动保存到当前客户端。" : "仅本次生效：当前环境无法保存偏好，刷新后可能恢复默认。";
     status.classList.toggle("error", !saved);
     syncPreferences();
   }
@@ -444,15 +444,14 @@ export function createSettingsUI({ api, notify, navigate, getPreferences, update
 
   function mount(target, page = "general") {
     const host = globalThis.window?.agentforgeDesktop;
-    if (page === "cli" && !host) page = "general";
     if (root !== target) {
       root = target;
       root.innerHTML = `<div class="settings-layout">
-        <nav class="settings-nav" aria-label="设置分类">${Object.entries(SETTINGS_PAGES).filter(([id]) => id !== "cli" || host).map(([id, label]) => `<button type="button" data-settings-page="${id}">${label}</button>`).join("")}</nav>
+        <nav class="settings-nav" aria-label="设置分类">${Object.entries(SETTINGS_PAGES).map(([id, label]) => `<button type="button" data-settings-page="${id}">${label}</button>`).join("")}</nav>
         <div class="settings-content">
           <section class="settings-section" data-settings-panel="general" hidden>
             <h3>常规</h3><p class="settings-description">此设备上的客户端行为。</p>
-            <form data-close-form><fieldset class="settings-radio-group"><legend>关闭主窗口时</legend><label class="settings-radio-option"><input type="radio" name="closeMode" value="quit" disabled /><span><strong>退出程序</strong><small>关闭客户端与它启动的本机后台。</small></span></label><label class="settings-radio-option"><input type="radio" name="closeMode" value="tray" disabled /><span><strong>保留在菜单栏</strong><small>继续运行，可通过 Mac 顶部图标重新打开窗口。</small></span></label></fieldset><p class="field-hint">Cmd+Q 始终退出程序；独立运行的 Web 服务不受影响。</p><div class="form-actions"><button class="primary-button compact" type="submit" disabled>保存</button></div></form>
+            <form data-close-form><fieldset class="settings-radio-group"><legend>关闭主窗口时</legend><label class="settings-radio-option"><input type="radio" name="closeMode" value="quit" disabled /><span><strong>退出程序</strong><small>关闭客户端与它启动的本机后台。</small></span></label><label class="settings-radio-option"><input type="radio" name="closeMode" value="tray" disabled /><span><strong>保留在菜单栏</strong><small>继续运行，可通过 Mac 顶部图标重新打开窗口。</small></span></label></fieldset><p class="field-hint">Cmd+Q 始终退出程序。</p><div class="form-actions"><button class="primary-button compact" type="submit" disabled>保存</button></div></form>
             <p data-close-status role="status">正在读取客户端偏好…</p><button class="small-button" data-close-retry hidden>重试</button>
             <div class="settings-signout"><button type="button" class="ghost-button" id="logout-button">退出登录</button></div>
           </section>
@@ -474,9 +473,9 @@ export function createSettingsUI({ api, notify, navigate, getPreferences, update
             <button class="small-button" data-logs-refresh>刷新路径</button><p data-log-status role="status">正在读取…</p>
             <p class="settings-note">JSONL 格式，保留错误原文、堆栈、进程退出信息及脱敏诊断输出。每进程独立文件，10 MiB 分卷，不自动删除旧卷；默认位于 ~/.agentforge/logs/&lt;实例标识&gt;，由操作者手工清理。请在运行服务的机器上打开此路径，分享日志前检查敏感内容。旧版本未保存的错误无法恢复。</p>
           </section>
-          <p class="settings-save-status" data-preferences-status role="status">外观和展示偏好自动保存在当前浏览器或客户端，两端可分别设置。</p>
+          <p class="settings-save-status" data-preferences-status role="status">外观和展示偏好自动保存在当前客户端。</p>
           <section class="settings-section" data-settings-panel="appearance" aria-labelledby="appearance-title">
-            <h3 id="appearance-title">界面主题</h3><p class="settings-description">外观偏好在 Web 与客户端分别保存；客户端使用独立的管理工作台布局。</p>
+            <h3 id="appearance-title">界面主题</h3><p class="settings-description">外观偏好保存在当前客户端；客户端使用独立的管理工作台布局。</p>
             <fieldset class="theme-options"><legend class="visually-hidden">界面主题</legend>${[
               ["warm", "暖白", "暖色浅底与柔和层次。"],
               ["minimal", "极简", "平面层次、克制圆角与清晰的管理界面。"],
@@ -515,8 +514,7 @@ export function createSettingsUI({ api, notify, navigate, getPreferences, update
       closePreferenceUI = createClosePreferenceUI(root.querySelector('[data-settings-panel="general"]'), globalThis.window?.agentforgeDesktop);
       pluginUpdateUI = createPluginUpdateSettingsUI(root.querySelector('[data-settings-panel="plugins"]'), api);
       const cliPanel = root.querySelector('[data-settings-panel="cli"]');
-      if (host) cliInstallationUI = createCliInstallationUI(cliPanel, host);
-      else cliPanel.remove();
+      cliInstallationUI = createCliInstallationUI(cliPanel, host);
       globalThis.window?.addEventListener("focus", refreshHostSettings);
       layout.addEventListener("click", (event) => {
         const button = event.target.closest("button");

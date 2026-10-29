@@ -1,11 +1,11 @@
 // Real localhost HTTPS Git + production 120s timer. Model calls are opt-in.
 import assert from 'node:assert/strict';
-import {fork,spawn,execFileSync} from 'node:child_process';
+import {spawn,execFileSync} from 'node:child_process';
 import {mkdir,writeFile,readFile} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
 import {homedir} from 'node:os';
 import {randomBytes} from 'node:crypto';
-import {chromium,_electron as electron} from 'playwright-core';
+import {_electron as electron} from 'playwright-core';
 import {createAuth} from '../server/auth.mjs';
 import {gitOrigin} from '../tests/plugin-git-fixture.mjs';
 
@@ -18,17 +18,12 @@ await writeFile(join(origin.source,'skills/current/SKILL.md'),'---\nname: curren
 await writeFile(join(origin.source,'skills/current/facts.txt'),before);await origin.commit();await origin.git('-C',join(root,'repos/repo.git'),'symbolic-ref','HEAD','refs/heads/main');
 const home=join(root,'home'),data=packaged?join(home,'.agentforge/desktop'):join(root,'client');await mkdir(home);
 const password=randomBytes(24).toString('hex'),auth=createAuth({databasePath:join(data,'auth.sqlite')});await auth.setAdministrator('update-qa',password);auth.close();
-let backend,app,browser,page,base;
+let app,page,base;
 const evidence={root,packaged:Boolean(packaged),real,result:'RUNNING'};
 const wait=async(label,check,timeout=300000)=>{const start=Date.now();let last=0;while(Date.now()-start<timeout){const value=await check();if(value)return value;if(Date.now()-last>30000){console.log('WAIT',label);last=Date.now()}await new Promise(done=>setTimeout(done,500))}throw Error('timeout: '+label)};
 try{
   const env={...process.env,HOME:home,CLAUDE_CONFIG_DIR:process.env.CLAUDE_CONFIG_DIR || join(homedir(),'.claude'),AGENTFORGE_LOG_DIR:join(root,'logs')};
-  if(packaged){app=await electron.launch({executablePath:resolve(packaged,'Contents/MacOS/AgentForge'),args:['--user-data-dir='+join(root,'profile')],env,timeout:90000});page=await app.firstWindow();await page.waitForURL(/^http:\/\/127\.0\.0\.1:/,{timeout:60000});base=new URL(page.url()).origin;}
-  else{
-    backend=fork(resolve('server/index.mjs'),[],{env:{...env,HOST:'127.0.0.1',AGENTFORGE_DESKTOP_PORT:'0',AGENTFORGE_BOOTSTRAP_TOKEN:randomBytes(32).toString('hex'),AGENTFORGE_DB_PATH:join(data,'state.sqlite'),AGENTFORGE_AUTH_DB_PATH:join(data,'auth.sqlite'),AGENTFORGE_RUNTIME_CONFIG_ROOT:join(data,'runtime'),AGENTFORGE_RUN_FILES_ROOT:join(data,'runs'),AGENTFORGE_WORKSPACE_ROOT:join(root,'work')},stdio:['ignore','pipe','pipe','ipc']});
-    base=await new Promise((done,reject)=>{const timer=setTimeout(()=>reject(Error('startup timeout')),60000);backend.stdout.on('data',chunk=>{const match=String(chunk).match(/http:\/\/127\.0\.0\.1:\d+/);if(match){clearTimeout(timer);done(match[0])}});backend.once('exit',reject);backend.stderr.resume()});
-    browser=await chromium.launch({channel:'chrome',headless:true});page=await browser.newPage({viewport:{width:1360,height:900}});
-  }
+  app=await electron.launch({...(packaged?{executablePath:resolve(packaged,'Contents/MacOS/AgentForge')}:{}),args:packaged?[]:['apps/electron/main.mjs'],env:{...env,AGENTFORGE_DESKTOP_DATA_ROOT:data},timeout:90000});page=await app.firstWindow();await page.waitForURL(/^http:\/\/127\.0\.0\.1:/,{timeout:60000});base=new URL(page.url()).origin;
   console.log('EVIDENCE',root);
   const api=(path,body,method=body?'POST':'GET')=>page.evaluate(async({path,body,method})=>{const r=await fetch(path,{method,...(body?{headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{})});const value=await r.json();if(!r.ok)throw Error(JSON.stringify(value));return value},{path,body,method});
   await page.goto(base+'/login');await page.locator('#username').fill('update-qa');await page.locator('#password').fill(password);await page.getByRole('button',{name:'登录',exact:true}).click();await page.locator('#account-name').waitFor();
@@ -86,4 +81,4 @@ try{
   assert.equal(await page.locator('.communication-contact.selected').getAttribute('data-chat-id'),explicit.id);
   evidence.result='PASS';console.log('PASS',root);
 }catch(error){evidence.result='FAIL';evidence.error=error.message;throw error;}
-finally{await writeFile(join(root,'evidence.json'),JSON.stringify(evidence,null,2));await app?.close();await browser?.close();backend?.kill('SIGTERM');for(const cleanup of cleanups.reverse())await cleanup();}
+finally{await writeFile(join(root,'evidence.json'),JSON.stringify(evidence,null,2));await app?.close();for(const cleanup of cleanups.reverse())await cleanup();}

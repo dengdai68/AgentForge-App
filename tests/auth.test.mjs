@@ -7,13 +7,37 @@ import { tmpdir } from "node:os";
 import { DatabaseSync } from "node:sqlite";
 import { createAuth } from "../server/auth.mjs";
 
-test("startup reads persistent local origin before constructing authentication", async () => {
-  const source = await readFile(new URL("../server/index.mjs", import.meta.url), "utf8");
-  assert.ok(source.indexOf('loadEnvFile(join(root, ".env"))') < source.indexOf("auth = createAuth(authOptions)"));
-  assert.ok(source.indexOf("server.address().port") < source.lastIndexOf("auth = createAuth(authOptions)"), "desktop auth must use its bound port");
-  assert.match(source, /if \(error.code !== "ENOENT"\) \{[^\n]*diagnostic\("process.environment_failed"[^\n]*throw error/);
-  const setup = await readFile(new URL("../scripts/auth-setup.mjs", import.meta.url), "utf8");
-  assert.ok(setup.indexOf('loadEnvFile(fileURLToPath(new URL("../.env"') < setup.indexOf("const auth = createAuth"));
+test("local service requires an owning client before opening storage", async () => {
+  const {execFile}=await import("node:child_process");
+  const {promisify}=await import("node:util");
+  await assert.rejects(promisify(execFile)(process.execPath,["server/index.mjs"],{env:{...process.env,AGENTFORGE_BOOTSTRAP_TOKEN:"",HOST:"0.0.0.0",PORT:"4310"}}),error=>error.code===1 && /只能由 AgentForge 客户端启动/.test(error.stderr));
+});
+
+test("owned service binds only its random loopback origin and exits with the owner", async t => {
+  const {fork}=await import('node:child_process');
+  const {randomBytes}=await import('node:crypto');
+  const root=await mkdtemp(join(tmpdir(),'af-owned-service-'));
+  const child=fork(new URL('../server/index.mjs',import.meta.url),[],{stdio:['ignore','ignore','pipe','ipc'],env:{...process.env,HOME:root,HOST:'0.0.0.0',PORT:'4310',AGENTFORGE_PUBLIC_ORIGIN:'https://unused.invalid',AGENTFORGE_DESKTOP_PORT:'0',AGENTFORGE_BOOTSTRAP_TOKEN:randomBytes(32).toString('hex'),AGENTFORGE_DB_PATH:join(root,'state.sqlite'),AGENTFORGE_AUTH_DB_PATH:join(root,'auth.sqlite'),AGENTFORGE_RUN_FILES_ROOT:join(root,'runs'),AGENTFORGE_RUNTIME_CONFIG_ROOT:join(root,'runtime'),AGENTFORGE_WORKSPACE_ROOT:join(root,'work') }});
+  t.after(()=>{child.kill();return rm(root,{recursive:true,force:true});});
+  const ready=await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('owned startup timeout')),30000);child.once('message',value=>{clearTimeout(timer);resolve(value)});child.once('exit',code=>{clearTimeout(timer);reject(Error('unexpected exit '+code))});});
+  const origin='http://127.0.0.1:'+ready.port;
+  assert.equal(ready.type,'agentforge-ready');assert.ok(ready.port>0);
+  assert.equal((await fetch(origin+'/api/health')).status,200);
+  assert.match(await (await fetch(origin+'/login')).text(),/agentforge-desktop-style/);
+  const rejected=await fetch(origin+'/api/auth/login',{method:'POST',headers:{Origin:'https://unused.invalid','Content-Type':'application/json'},body:'{}'});assert.equal(rejected.status,403);
+  const exited=new Promise(resolve=>child.once('exit',resolve));child.disconnect();
+  assert.equal(await exited,143);
+});
+
+test("omitted origins allow offline setup but deny every HTTP host", async t => {
+  const root=await mkdtemp(join(tmpdir(),'af-deny-origin-'));
+  const auth=createAuth({databasePath:join(root,'auth.sqlite')});
+  const server=createServer((req,res)=>{void auth.guard(req,res,new URL(req.url,'http://localhost'));});
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  t.after(async()=>{await new Promise(resolve=>server.close(resolve));auth.close();await rm(root,{recursive:true,force:true});});
+  await auth.setAdministrator('fixture-admin','Disposable-only-setup-519');
+  const response=await fetch('http://127.0.0.1:'+server.address().port+'/api/auth/session');
+  assert.equal(response.status,403);
 });
 
 test("authentication gates real HTTP, persists revocable sessions and never stores passwords/tokens", async () => {
@@ -39,7 +63,9 @@ test("authentication gates real HTTP, persists revocable sessions and never stor
     assert.deepEqual(await (await get("/api/auth/bootstrap-status")).json(), { available: false, configured: false });
     const unconfigured = await post("/api/auth/login", {username:"admin",password});
     assert.equal(unconfigured.status, 503);
-    assert.match((await unconfigured.json()).error, /项目目录/);
+    const setupMessage=(await unconfigured.json()).error;
+    assert.match(setupMessage, /客户端.*重新连接.*首次设置/);
+    assert.doesNotMatch(setupMessage,/项目目录|auth:setup/);
     await assert.rejects(auth.setAdministrator("admin", "short"));
     await auth.setAdministrator("admin", password);
     assert.deepEqual(await (await get("/api/auth/bootstrap-status")).json(), { available: false, configured: true });

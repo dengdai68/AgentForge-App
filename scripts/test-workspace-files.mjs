@@ -5,7 +5,7 @@ import {join,resolve,dirname,basename} from 'node:path';
 import {tmpdir,homedir} from 'node:os';
 import {spawn,execFileSync} from 'node:child_process';
 import {randomBytes,createHash} from 'node:crypto';
-import {chromium,_electron as electron} from 'playwright-core';
+import {_electron as electron} from 'playwright-core';
 import {createAuth} from '../server/auth.mjs';
 
 if(process.env.AGENTFORGE_WORKSPACE_REAL!=='1')throw Error('Set AGENTFORGE_WORKSPACE_REAL=1 to authorize a real Claude code-development task.');
@@ -21,7 +21,7 @@ const wrapper=join(root,'real-claude');await writeFile(wrapper,'#!/bin/sh\nHOME=
 const clip=join(root,'fixture.mp4');if(!resumed)execFileSync('ffmpeg',['-hide_banner','-loglevel','error','-f','lavfi','-i','color=c=blue:s=160x90:r=10','-t','1','-c:v','libx264','-pix_fmt','yuv420p',clip]);
 const appPath=process.env.AGENTFORGE_WORKSPACE_APP;
 const app=await electron.launch({...(appPath?{executablePath:resolve(appPath,'Contents/MacOS/AgentForge'),args:['--user-data-dir='+join(root,'profile')]}:{args:['apps/electron/main.mjs','--user-data-dir='+join(root,'profile')]}),env:{...process.env,HOME:home,CLAUDE_CONFIG_DIR:process.env.CLAUDE_CONFIG_DIR || join(homedir(),'.claude'),AGENTFORGE_DESKTOP_DATA_ROOT:data,AGENTFORGE_LOG_DIR:join(root,'logs')},timeout:90000});
-let browser;const evidence={root,packaged:Boolean(appPath),real:true,resumed,result:'RUNNING'};
+const evidence={root,packaged:Boolean(appPath),real:true,resumed,result:'RUNNING'};
 const wait=async(label,check,timeout=900000)=>{const start=Date.now();let last=0;while(Date.now()-start<timeout){const value=await check();if(value)return value;if(Date.now()-last>30000){console.log('WAIT',label);last=Date.now()}await new Promise(done=>setTimeout(done,500))}throw Error('timeout: '+label)};
 try{
   const page=await app.firstWindow();await page.waitForURL(/^http:\/\/127\.0\.0\.1:/,{timeout:60000});const base=new URL(page.url()).origin;
@@ -61,9 +61,8 @@ try{
   await writeFile(join(workspace,'.env'),'private fixture sentinel');await writeFile(join(workspace,'.agentforge-workspace.json'),'{obsolete invalid fixture}');
   const changes=await api('/api/runs/'+run.id+'/working-directory/changes');assert.ok(changes.repositories.flatMap(repo=>repo.changes).some(item=>item.path==='artifacts/preparation/assets/source.mp4'));
   const tooLarge=await api('/api/runs/'+run.id+'/working-directory/diff?path=artifacts/preparation/assets/large-test.bin');assert.equal(tooLarge.tooLarge,true);
-  browser=await chromium.launch({channel:'chrome',headless:true});const web=await browser.newPage({viewport:{width:1360,height:900}});await login(web);
   const openFolder=async(p,path)=>{const folder=p.locator(`[data-directory-path="${path}"]`);await folder.waitFor();if(!await folder.evaluate(el=>el.open))await folder.locator(':scope > summary').click();};
-  for(const [surface,p] of [['desktop',page],['web',web]]){
+  for(const [surface,p] of [['desktop',page]]){
     await p.goto(base+'/runs/'+run.id);await p.locator('#directory-mode').click();await p.locator('[data-directory-path=artifacts]').waitFor();
     for(const path of ['artifacts','artifacts/preparation','artifacts/preparation/assets'])await openFolder(p,path);
     await p.locator('[data-select-working-file="artifacts/preparation/assets/source.mp4"]').waitFor();
@@ -86,4 +85,4 @@ try{
   await page.locator('[data-open-completion-confirm]').click();assert.equal(await page.locator('#confirm-completion').isDisabled(),true);await page.locator('#ack-completion').check();await page.locator('#confirm-completion').click();const done=await wait('human confirmation',async()=>{const w=await state();return w.run.status==='completed'?w:null});assert.equal(done.run.confirmedBy,'human_operator');
   evidence.task={taskId:task.id,runId:run.id,traceCount:done.traces.length,humanConfirmation:done.run.confirmedBy,workspace};evidence.result='PASS';console.log('PASS',root);
 }catch(error){evidence.result='FAIL';evidence.error=error.message;throw error;}
-finally{await writeFile(join(root,resumed?'evidence-resumed.json':'evidence.json'),JSON.stringify(evidence,null,2));await browser?.close();await app.close();}
+finally{await writeFile(join(root,resumed?'evidence-resumed.json':'evidence.json'),JSON.stringify(evidence,null,2));await app.close();}

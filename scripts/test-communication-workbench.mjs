@@ -1,7 +1,7 @@
 // Isolated real UI/API acceptance. REAL=1 uses the operator's existing Claude
 // login read-only; it never modifies credentials, real instances or projects.
 import assert from 'node:assert/strict';
-import { _electron as electron, chromium } from 'playwright-core';
+import { _electron as electron } from 'playwright-core';
 import { mkdir, mkdtemp, readFile, writeFile, stat } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { randomBytes, createHash } from 'node:crypto';
@@ -46,7 +46,7 @@ if (!real) {
 }
 store.close();
 const app = await electron.launch({ ...(packaged ? { executablePath: resolve('release/mac-arm64/AgentForge.app/Contents/MacOS/AgentForge') } : {}), args: packaged ? [] : ['apps/electron/main.mjs'], env: { ...process.env, HOME: home, AGENTFORGE_LOG_DIR: join(root, 'logs'), AGENTFORGE_DESKTOP_DATA_ROOT: data }, timeout: 60000 });
-let browser; const errors = [], evidence = { root, real, packaged };
+const errors = [], evidence = { root, real, packaged };
 const wait = async (label, check, timeout = 180000) => { const start = Date.now(); let reported = 0; while (Date.now() - start < timeout) { const value = await check(); if (value) return value; if (Date.now() - reported > 30000) { console.log('WAIT ' + label); reported = Date.now(); } await new Promise(done => setTimeout(done, 500)); } throw new Error('Timed out: ' + label); };
 try {
   const page = await app.firstWindow({ timeout: 60000 }); await page.waitForURL(/^http:\/\/127\.0\.0\.1:/, { timeout: 60000 });
@@ -178,19 +178,7 @@ try {
     await older.click(); await page.waitForFunction(() => document.querySelector('[data-communication-console-older]').hidden);
     assert.equal(await page.locator('[data-communication-stream] .log-row').filter({ hasText: '隔离分页夹具记录' }).count(), 65, 'all fixture history retained after paging');
   }
-  browser = await chromium.launch({ channel: 'chrome', headless: false }); const web = await browser.newPage({ viewport: { width: 1440, height: 900 } });
-  web.on('pageerror', error => errors.push(error.message)); await login(web); await web.goto(origin + '/communication/' + chat.id);
-  await web.locator('[data-toggle-communication-console]').click(); await web.locator('[data-communication-stream] .log-row').first().waitFor();
-  await assertSplitHeaders(web);
-  assert.equal(await web.locator('#agentforge-desktop-style').count(), 0); await web.screenshot({ path: join(root, 'web-split-wide.png') });
-  await web.setViewportSize({ width: 640, height: 800 }); assert.equal(await web.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
-  await assertSplitHeaders(web);
-  assert.ok(await web.locator('.communication-composer [type=submit]').evaluate(node => node.getBoundingClientRect().bottom <= innerHeight));
-  await web.screenshot({ path: join(root, 'web-split-narrow.png') });
-  const downloaded = web.waitForEvent('download'); await web.locator('[data-attachment-download]').first().click();
-  const download = await downloaded; await download.saveAs(join(root, 'download.md')); assert.deepEqual(await readFile(join(root, 'download.md')), buffers[0]);
-  // Negative real HTTP cases, through a separate normal QA login (no browser-cookie extraction).
-  const loginResponse = await fetch(origin + '/api/auth/login', { method: 'POST', headers: { Origin: origin, 'Content-Type': 'application/json' }, body: JSON.stringify({ username: 'communication-qa', password }) });
+  const loginResponse = await fetch(origin+'/api/auth/login',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({username:'communication-qa',password})});
   const cookie = loginResponse.headers.get('set-cookie').match(/agentforge_session=[a-f0-9]+/)[0];
   const upload = (name, bytes, originHeader = origin, authenticated = true) => fetch(origin + '/api/communications/' + chat.id + '/attachments?name=' + encodeURIComponent(name), { method: 'POST', headers: { Origin: originHeader, 'Content-Type': 'application/octet-stream', ...(authenticated ? { Cookie: cookie } : {}) }, body: bytes });
   assert.equal((await upload('a.txt', 'x', origin, false)).status, 401);
@@ -202,4 +190,4 @@ try {
   await writeFile(join(root, 'evidence.json'), JSON.stringify(evidence, null, 2));
   console.log(`PASS communication workbench ${real ? 'REAL Claude' : 'controlled-failure UI'}: ${root}`);
 } catch (error) { console.error('Evidence root:', root); throw error; }
-finally { await browser?.close(); await app.close(); }
+finally { await app.close(); }
