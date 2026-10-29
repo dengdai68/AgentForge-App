@@ -1,0 +1,31 @@
+name: AgentForge App quality gates
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  contract-and-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run check:ai
+      - name: Check module impact on pull request
+        if: github.event_name == 'pull_request'
+        run: npm run check:impact -- --range "origin/${{ github.base_ref }}" HEAD
+      - name: Check module impact on push
+        if: github.event_name == 'push'
+        run: npm run check:impact -- --range "${{ github.event.before }}" "${{ github.sha }}"
+      - run: node --check server/index.mjs
+      - run: node --check server/store.mjs
+      - run: node --check server/orchestrator.mjs
+      - run: node --check web/app.js
+      - run: npm run desktop:check

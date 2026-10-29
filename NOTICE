@@ -1,0 +1,20 @@
+AgentForge App
+Copyright 2026 dengdai68 and AgentForge contributors
+
+Derived from AgentForge, source commit c1277e57a715d31ae6d64f15ecb4d7fbecd8ec31.
+Project source: https://github.com/dengdai68/AgentForge-App
+Original source: https://github.com/dengdai68/AgentForge
+
+Except for separately licensed third-party components, this project's source
+is licensed under the Apache License, Version 2.0. See LICENSE.
+
+The vendored vscode-icons subset retains its MIT license at
+web/icons/vscode/LICENSE and its attribution in web/icons/vscode/README.md.
+Electron, npm dependencies and other third-party components retain their own
+licenses. Installing dependencies or distributing the application does not
+replace those licenses with this project's Apache-2.0 license.
+
+Packaged application resources also include the Electron MIT license and the
+Chromium third-party notices in licenses/electron/LICENSE and
+licenses/electron/LICENSES.chromium.html, copied from the locked Electron
+distribution without changing their contents.

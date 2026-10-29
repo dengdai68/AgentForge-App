@@ -1,0 +1,18 @@
+/* Layout only; colors, typeface, buttons and focus reuse the desktop workbench. */
+* { box-sizing:border-box; }
+body.cli-confirmation { margin:0; padding:0; color:var(--ink); background:var(--paper); }
+.cli-confirmation main { display:flex; flex-direction:column; height:100vh; min-height:0; }
+.cli-confirmation header { padding:22px 24px 16px; border-bottom:1px solid var(--line); }
+.cli-confirmation h1 { margin:0 0 8px; font-size:15px; font-weight:600; letter-spacing:0; }
+.cli-confirmation header p { margin:0; color:var(--muted); font-size:12px; }
+.confirmation-content { flex:1; min-height:0; overflow:auto; padding:18px 24px; }
+.confirmation-content section + section { margin-top:18px; }
+.confirmation-content h2 { margin:0 0 8px; font-size:12px; font-weight:500; }
+.confirmation-path { margin:6px 0; padding:8px 10px; border:1px solid var(--line); border-radius:var(--desktop-radius); background:var(--surface-soft); font:11px/1.6 ui-monospace,SFMono-Regular,monospace; overflow-wrap:anywhere; user-select:text; }
+.confirmation-description,.confirmation-note { color:var(--muted); font-size:12px; line-height:1.6; }
+.confirmation-description { margin:0 0 8px; }
+.confirmation-note { margin:18px 0 0; }
+.cli-confirmation footer { display:flex; flex:none; justify-content:flex-end; gap:8px; padding:12px 24px; border-top:1px solid var(--line); }
+.cli-confirmation footer button { min-height:32px; padding:6px 12px; border:1px solid var(--line); border-radius:var(--desktop-radius); font-size:12px; cursor:pointer; }
+.cli-confirmation .ghost-button { color:var(--ink); background:var(--paper); }
+.cli-confirmation .primary-button { color:var(--paper); background:var(--desktop-action); border-color:var(--desktop-action); }

@@ -1,0 +1,138 @@
+name: Publish AgentForge App macOS Beta
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing approved Git tag matching package.json, for example v0.1.1-beta.1
+        required: true
+        type: string
+      prerelease:
+        description: Mark this unsigned build as a pre-release
+        required: true
+        default: true
+        type: boolean
+      confirmation:
+        description: Type UNSIGNED_BETA to acknowledge ad-hoc signing without Developer ID or notarization
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ad-hoc arm64 Beta
+    runs-on: macos-14
+    timeout-minutes: 45
+    outputs:
+      release-artifact-id: ${{ steps.release-artifact.outputs.artifact-id }}
+    steps:
+      - name: Require explicit release acknowledgement
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          test "$CONFIRMATION" = "UNSIGNED_BETA" || {
+            echo "Refusing to publish without confirmation=UNSIGNED_BETA." >&2
+            exit 1
+          }
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Verify selected release tag
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          printf '%s' "$RELEASE_TAG" | grep -Eq '^v[0-9][0-9A-Za-z._-]*$' || {
+            echo "Release tag must begin with v followed by a digit and contain only release-safe characters." >&2
+            exit 1
+          }
+          git show-ref --tags --verify --quiet "refs/tags/$RELEASE_TAG" || {
+            echo "Release tag does not exist: $RELEASE_TAG" >&2
+            exit 1
+          }
+          test "$(git rev-list -n 1 "$RELEASE_TAG")" = "$(git rev-parse HEAD)" || {
+            echo "Checked-out commit does not match tag: $RELEASE_TAG" >&2
+            exit 1
+          }
+          node --input-type=module -e 'import { readFileSync } from "node:fs"; import assert from "node:assert/strict"; const { version } = JSON.parse(readFileSync("package.json", "utf8")); assert.equal(process.env.RELEASE_TAG, `v${version}`, "Release tag must match package.json version");'
+      - run: npm ci
+      - run: npm test
+      - run: npm run check:ai
+      - run: npm run check:impact
+      - run: npm run desktop:check
+      - run: npm run package:mac
+      - run: npm run package:mac:check
+      - name: Create checksums
+        run: |
+          dmg_count="$(find release -maxdepth 1 -type f -name 'AgentForge-*-arm64.dmg' | wc -l | tr -d ' ')"
+          zip_count="$(find release -maxdepth 1 -type f -name 'AgentForge-*-arm64.zip' | wc -l | tr -d ' ')"
+          test "$dmg_count" = "1" && test "$zip_count" = "1" || {
+            echo "Expected exactly one arm64 DMG and ZIP." >&2
+            exit 1
+          }
+          dmg="$(find release -maxdepth 1 -type f -name 'AgentForge-*-arm64.dmg')"
+          zip="$(find release -maxdepth 1 -type f -name 'AgentForge-*-arm64.zip')"
+          (cd release && shasum -a 256 "$(basename "$dmg")" "$(basename "$zip")" > SHA256SUMS.txt)
+      - name: Retain verified release assets for publishing
+        id: release-artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: agentforge-macos-arm64-beta
+          path: |
+            release/AgentForge-*-arm64.dmg
+            release/AgentForge-*-arm64.zip
+            release/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 1
+  publish:
+    name: Publish ad-hoc arm64 Beta
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - name: Retrieve verified release assets
+        uses: actions/download-artifact@v4
+        with:
+          name: agentforge-macos-arm64-beta
+          path: release
+      - name: Verify checksums after transfer
+        working-directory: release
+        run: sha256sum --check SHA256SUMS.txt
+      - name: Publish GitHub pre-release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          PRERELEASE: ${{ inputs.prerelease }}
+        run: |
+          dmg="$(find release -maxdepth 1 -type f -name 'AgentForge-*-arm64.dmg')"
+          zip="$(find release -maxdepth 1 -type f -name 'AgentForge-*-arm64.zip')"
+          release_flags=()
+          if [ "$PRERELEASE" = "true" ]; then release_flags+=(--prerelease); fi
+          gh release create "$RELEASE_TAG" "$dmg" "$zip" release/SHA256SUMS.txt \
+            --title "AgentForge $RELEASE_TAG · macOS Apple Silicon Beta" --verify-tag \
+            --notes "macOS 13+ / Apple Silicon (M-series) only. Download the DMG and drag AgentForge into Applications, or extract the ZIP. Download SHA256SUMS.txt into the same folder and run: shasum -a 256 -c SHA256SUMS.txt
+
+          This Beta is ad-hoc signed for bundle integrity, NOT Developer ID signed or Apple notarized. Gatekeeper may block it; only allow it through macOS settings if you trust the source. Do not disable Gatekeeper. No automatic updater, Intel/Windows/Linux build, Agent sandbox or enterprise security guarantees.
+
+          The local control plane is bundled; no global Node is required. Install and authorize Claude Code or Codex CLI separately. Create a local administrator on first launch, then configure GitHub/GitLab pull tokens under Settings → Repository access. No provider sessions or credentials are bundled.
+
+          Source and release assets are maintained in the public AgentForge-App repository." \
+            --generate-notes "${release_flags[@]}"
+      - name: Remove transferred artifact after successful publication
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          ARTIFACT_ID: ${{ needs.build.outputs.release-artifact-id }}
+        run: |
+          [[ "$ARTIFACT_ID" =~ ^[0-9]+$ ]] || { echo "Missing exact build artifact ID." >&2; exit 1; }
+          gh api --method DELETE "repos/$GH_REPO/actions/artifacts/$ARTIFACT_ID"

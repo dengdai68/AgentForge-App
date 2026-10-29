@@ -1,0 +1,28 @@
+node_modules/
+.DS_Store
+*.log
+.env
+data/*.json
+.data/
+
+# Local credentials and environment overrides; keep the documented template.
+.env.*
+!.env.example
+*.sqlite
+*.sqlite3
+*.sqlite-*
+*.sqlite3-*
+*.db
+*.db-*
+
+# Generated local visual QA and test output, not application assets.
+/screenshots/
+/.visualizations/
+/coverage/
+/test-results/
+/playwright-report/
+/.auth/
+/release/
+
+# Local task workspace metadata.
+/.agentforge-workspace.json

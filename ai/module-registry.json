@@ -1,0 +1,1063 @@
+{
+  "schemaVersion": 1,
+  "project": "agentforge",
+  "distribution": "AgentForge-App is the self-contained desktop extraction from AgentForge c1277e5. npm start/dev launch Electron; server/web/client/cli are bundled local dependencies. No sibling repository imports. See docs/23-desktop-extraction.md.",
+  "purpose": "Module ownership, current contracts and change-impact requirements for the local AgentForge control plane and clients.",
+  "instructions": [
+    "AGENTS.md",
+    "CLAUDE.md"
+  ],
+  "instructionContract": "AGENTS.md is the concise canonical repository rulebook; CLAUDE.md retains only its local AGENTS link. verify-ai-contract validates the reference and required rules, not duplicated bodies. Development does not maintain old-version data compatibility, migrations or automatic backups; breaking changes state reinitialization requirements without silently resetting operator data. Changes to CLI-covered features must synchronize affected commands, validation, text/JSON output, progressive help/schema, docs and tests in the same change without expanding authority; details in CONTRIBUTING.md and docs/21.",
+  "humanMap": "docs/00-ai-map.md",
+  "moduleRoots": [
+    {
+      "path": "cli/",
+      "localReadme": "cli/README.md"
+    },
+    {
+      "path": "ai/",
+      "localReadme": "ai/README.md"
+    },
+    {
+      "path": "server/history/",
+      "localReadme": "server/history/README.md"
+    },
+    {
+      "path": "server/",
+      "localReadme": "server/README.md"
+    },
+    {
+      "path": "web/",
+      "localReadme": "web/README.md"
+    },
+    {
+      "path": "client/",
+      "localReadme": "client/README.md"
+    },
+    {
+      "path": "apps/",
+      "localReadme": "apps/README.md"
+    },
+    {
+      "path": "tests/",
+      "localReadme": "tests/README.md"
+    },
+    {
+      "path": "docs/",
+      "localReadme": "docs/README.md"
+    },
+    {
+      "path": "scripts/",
+      "localReadme": "scripts/README.md"
+    }
+  ],
+  "modules": [
+    {
+      "id": "server.plugin-updates",
+      "path": "server/plugin-updates.mjs",
+      "kind": "orchestration",
+      "owner": "server",
+      "purpose": "Non-overlapping configurable Git plugin checks (default two minutes), immutable candidate installation and Store-owned current employee rebinding; selected sources only, no MCP rebinding or frozen work rewrite.",
+      "sourceOfTruth": ["docs/02-system-architecture.md", "docs/15-employee-runtime-configuration.md"],
+      "tests": ["tests/plugin-updates.test.mjs"],
+      "allowedDependencies": ["Store commands", "runtime marketplace/configuration", "diagnostics", "node:*"],
+      "forbiddenDependencies": ["Provider invocation", "direct domain mutation", "global CLI configuration"],
+      "whenChanged": {"mustUpdate": ["ai/module-registry.json", "docs/00-ai-map.md", "server/README.md", "docs/02-system-architecture.md", "docs/15-employee-runtime-configuration.md", "CHANGELOG.md"], "reviewIf": ["lifecycle", "filesystem", "privacy"]}
+    },
+    {
+      "id": "scripts.app-icon",
+      "path": "scripts/build-app-icon.cjs",
+      "kind": "developer-tooling",
+      "owner": "client-platform",
+      "purpose": "Generate committed macOS ICNS sizes from the unchanged owner-supplied application.png using macOS sips/iconutil; no redraw, browser, network or new dependency. Generation is optional developer tooling, not a release prerequisite.",
+      "sourceOfTruth": ["docs/18-electron-client.md", "web/icons/README.md"],
+      "tests": ["tests/electron.test.mjs", "scripts/test-packaged-electron.mjs"],
+      "allowedDependencies": ["node:*", "macOS sips/iconutil"],
+      "forbiddenDependencies": ["Store", "Provider", "operator data"],
+      "whenChanged": { "mustUpdate": ["ai/module-registry.json", "docs/00-ai-map.md", "scripts/README.md", "docs/18-electron-client.md", "CHANGELOG.md"], "reviewIf": ["packaging", "branding"] }
+    },
+    {
+      "id": "server.prompts",
+      "path": "server/prompts.mjs",
+      "kind": "pure-composition",
+      "owner": "orchestration",
+      "purpose": "Compose separate application system instructions and current input for Task and communication calls. Full workflow belongs only to the manager; execution environment is system context. Native sessions own conversation history; Store supplies unacknowledged cross-member messages and content-hashed context deltas; actual model activity acknowledges input even if a turn later fails.",
+      "sourceOfTruth": ["docs/22-prompt-assembly.md", "docs/03-domain-model.md"],
+      "tests": ["tests/prompts.test.mjs", "tests/dispatch-routing.test.mjs", "tests/communication.test.mjs"],
+      "allowedDependencies": ["node:crypto"],
+      "forbiddenDependencies": ["Store", "filesystem", "Provider"],
+      "whenChanged": { "mustUpdate": ["ai/module-registry.json", "docs/00-ai-map.md", "server/README.md", "docs/22-prompt-assembly.md", "CHANGELOG.md"], "reviewIf": ["sessions", "privacy", "workflow", "provider"] }
+    },
+    {
+      "id": "cli.configuration",
+      "workspaceFiles": "Workflow artifactPaths schema/help validates arbitrary canonical relative delivery positions, with no docs default; Artifacts retain progressive reference output. No directory browser/download CLI authority is added.",
+      "pluginUpdates": "plugins updates/check-updates/auto-update expose the shared service scheduler, progressive typed settings and reference-only update receipts; no direct Git or Provider access.",
+      "mcpEditing": "mcps update ID sends authenticated partial PUT, preserves unchanged redacted fields, returns new/previous IDs and employee references; frozen work remains unchanged.",
+      "promptContract": "Employee systemPrompt help/schema explains native application system/developer instructions; configuration and Task commands/fields/auth remain unchanged.",
+      "recordPresentation": "Task collaboration text/JSON excludes client-only tone/statusCode metadata; progressive command and status contracts remain unchanged.",
+      "path": "cli/",
+      "kind": "authenticated-client",
+      "owner": "developer-experience",
+      "purpose": "Self-describing configuration and Task HTTP CLI with progressive text and explicit JSON. Catalog owns fields/help; main sends authenticated commands; output renders safe terminal text. Explicit Task execution and precise clarification replies use Store commands through HTTP; final human confirmation stays in Web/desktop. Bounded input/private sessions, no database or direct Runtime access. Packaged launcher uses bundled Electron Node.",
+      "sourceOfTruth": [
+        "docs/21-configuration-cli.md",
+        "docs/14-console-authentication.md"
+      ],
+      "tests": [
+        "tests/configuration-cli.test.mjs",
+        "tests/cli-password.test.mjs"
+      ],
+      "allowedDependencies": [
+        "node:*",
+        "authenticated loopback HTTP",
+        "client/console-projections.mjs"
+      ],
+      "forbiddenDependencies": [
+        "server/*",
+        "database",
+        "Provider",
+        "renderer IPC"
+      ],
+      "whenChanged": {
+        "mustUpdate": [
+          "ai/module-registry.json",
+          "docs/00-ai-map.md",
+          "cli/README.md",
+          "docs/21-configuration-cli.md",
+          "CHANGELOG.md"
+        ],
+        "reviewIf": [
+          "auth",
+          "privacy",
+          "public API",
+          "packaging"
+        ]
+      },
+      "extensionContract": "plugins list/get/import/delete, mcps list/get/create/delete and employee pluginIds/mcpIds; authenticated removal rejects current employee references and preserves frozen files. Claude/Codex local and remote Git marketplace entries install atomically; list shows supported Runtime names while get discloses compatibility/reasons. Progressive help/schema describe unsupported source types and Codex-only cwd/env_vars MCP fields. No individual Skill or employee mcpJson input. Source-internal links materialize on installation; progressive help/schema explain per-plugin/path failures and atomic rollback for dangling, cyclic, escaping or special files.",
+      "connectionContract": "Client-only: source and packaged CLI verify one private live endpoint before session access; no target flag, Web default or fallback. One private cli-session.json; offline help/validation remain offline."
+    },
+    {
+      "id": "server.data-reset",
+      "taskIdentity": "Managed Task validation accepts UUID hyphens while retaining exact path/marker ownership checks; traversal, siblings and external projects remain protected.",
+      "path": "server/data-reset.mjs",
+      "kind": "instance-lifecycle",
+      "owner": "server",
+      "purpose": "Validate exact instance-owned reset targets and managed Run identities, persist an explicit destructive reset intent and finish interrupted cleanup before normal startup. Never delete configured workspace parents, external projects or global CLI configuration.",
+      "sourceOfTruth": [
+        "docs/02-system-architecture.md",
+        "docs/14-console-authentication.md"
+      ],
+      "tests": [
+        "tests/data-reset.test.mjs"
+      ],
+      "allowedDependencies": [
+        "node:*"
+      ],
+      "forbiddenDependencies": [
+        "Provider",
+        "domain mutation"
+      ],
+      "whenChanged": {
+        "mustUpdate": [
+          "ai/module-registry.json",
+          "docs/00-ai-map.md",
+          "server/README.md",
+          "CHANGELOG.md"
+        ],
+        "reviewIf": [
+          "filesystem",
+          "security",
+          "recovery"
+        ]
+      }
+    },
+    {
+      "id": "server.data-home",
+      "path": "server/data-home.mjs",
+      "kind": "runtime",
+      "owner": "server",
+      "purpose": "Own the ~/.agentforge default data home: per-instance roots (web for the standalone service), standalone storage path resolution where every AGENTFORGE_* override wins over the defaults, legacy-default detection that refuses startup instead of silently creating a fresh instance over unmigrated data, and the shared migration guidance text. Historical frozen Task/Run paths are never rewritten.",
+      "sourceOfTruth": [
+        "docs/02-system-architecture.md",
+        "docs/18-electron-client.md"
+      ],
+      "tests": [
+        "tests/data-home.test.mjs",
+        "tests/migrate-data-home.test.mjs"
+      ],
+      "allowedDependencies": [
+        "node:*"
+      ],
+      "forbiddenDependencies": [
+        "Store",
+        "Provider SDK",
+        "network"
+      ],
+      "whenChanged": {
+        "mustUpdate": [
+          "ai/module-registry.json",
+          "docs/00-ai-map.md",
+          "server/README.md",
+          "docs/18-electron-client.md",
+          "CHANGELOG.md"
+        ],
+        "reviewIf": [
+          "filesystem",
+          "security",
+          "recovery"
+        ]
+      },
+      "workspaceDefault": "Shared pure defaultTaskWorkspaceRoot(home) resolves ~/agentforge independently of instance application data; explicit environment and saved settings still win, no historical path rewrite."
+    },
+    {
+      "id": "server.diagnostics",
+      "path": "server/diagnostics.mjs",
+      "kind": "runtime",
+      "owner": "observability",
+      "purpose": "Private local diagnostic files preserve original errors, stacks and redacted provider streams before audit classification; path-only authenticated settings, no domain state; the npm test entry (scripts/run-tests.mjs) pins AGENTFORGE_LOG_DIR to a disposable fixture so bare diagnostics in tests never reach the real data home",
+      "sourceOfTruth": [
+        "docs/02-system-architecture.md",
+        "docs/08-real-local-agent-runtime.md"
+      ],
+      "tests": [
+        "tests/diagnostics.test.mjs"
+      ],
+      "allowedDependencies": [
+        "node:*"
+      ],
+      "forbiddenDependencies": [
+        "Store",
+        "Provider SDK",
+        "network"
+      ],
+      "whenChanged": {
+        "mustUpdate": [
+          "ai/module-registry.json",
+          "docs/00-ai-map.md",
+          "server/README.md",
+          "docs/08-real-local-agent-runtime.md",
+          "CHANGELOG.md"
+        ],
+        "reviewIf": [
+          "privacy",
+          "filesystem"
+        ]
+      }
+    },
+    {
+      "id": "server.execution-logs",
+      "path": "server/execution-logs.mjs",
+      "kind": "read-model",
+      "owner": "server",
+      "purpose": "Bounded administrator execution log projection over task and communication audits; fixed summaries and safe failure classification, no new storage or state.",
+      "sourceOfTruth": [
+        "docs/03-domain-model.md",
+        "docs/02-system-architecture.md"
+      ],
+      "tests": [
+        "tests/execution-logs.test.mjs"
+      ],
+      "allowedDependencies": [
+        "Runtime pure failure classification",
+        "Store-injected state"
+      ],
+      "forbiddenDependencies": [
+        "Provider invocation",
+        "filesystem writes"
+      ],
+      "whenChanged": {
+        "mustUpdate": [
+          "ai/module-registry.json",
+          "docs/00-ai-map.md",
+          "server/README.md",
+          "docs/03-domain-model.md",
+          "CHANGELOG.md"
+        ],
+        "reviewIf": [
+          "privacy",
+          "pagination"
+        ]
+      }
+    },
+    {
+      "id": "server.history",
+      "instructionDependency": "History registers a transient MCP and a short evidence policy without Runtime prompt preparation or Provider execution ownership.",
+      "promptContract": "Actual MCP tool definitions and server instructions own capability names/schema/paging. Only a short historical-evidence policy remains in application instructions, with no tool list or Skill path injection; snapshots cover platform input, not Provider catalogs.",
+      "path": "server/history/",
+      "kind": "read-model",
+      "owner": "server",
+      "purpose": "Employee-bound history queries, derived SQLite search index and private read-only MCP bridge with self-describing bounded pagination plus frozen Artifact metadata passed to integrity-checked reads; invocation socket/config scratch files use a fresh short 0700 system-temporary directory so packaged userData paths cannot exceed macOS Unix-socket limits, while the adapter still uses bundled Electron Node mode; its real Claude/visible-browser E2E also proves the Console's disabled-before-acknowledgement human completion action rather than bypassing it with an HTTP completion call; no domain mutation.",
+      "sourceOfTruth": [
+        "docs/19-agent-history.md",
+        "docs/03-domain-model.md"
+      ],
+      "tests": [
+        "tests/history.test.mjs",
+        "scripts/test-history-e2e.mjs",
+        "scripts/verify-history-evidence.mjs",
+        "scripts/test-history-restart.mjs"
+      ],
+      "allowedDependencies": [
+        "node:*",
+        "@modelcontextprotocol/sdk",
+        "Store-injected state and queries"
+      ],
+      "forbiddenDependencies": [
+        "Provider SDK",
+        "domain mutation",
+        "administrator credentials"
+      ],
+      "whenChanged": {
+        "mustUpdate": [
+          "ai/module-registry.json",
+          "docs/00-ai-map.md",
+          "server/history/README.md",
+          "docs/19-agent-history.md",
+          "CHANGELOG.md"
+        ],
+        "reviewIf": [
+          "visibility",
+          "identity",
+          "index",
+          "security"
+        ]
+      }
+    },
+    {
+      "id": "apps.electron",
+      "workbenchPolish": "Task topbar and same-row actions align with searchable Team/Workflow directories. Compact directory toolbar is 44px; the unchanged owner-supplied ribbon A PNG serves sidebar/Dock and generates packaged macOS ICNS sizes, with its alpha silhouette as the tray template. No host/API expansion.",
+      "communicationWorkbench": "Shared authenticated attachments and half-width conversation console with compact spacing only; browser file input and HTTP, no general IPC. Isolated packaged and real-source acceptance protect operator instance data.",
+      "recordPresentation": "Compact shared semantic accents distinguish running member tabs, collaboration types/statuses and private/group senders without Web bubbles; packaged fixtures check active/terminal colors and paginated prompt records.",
+      "path": "apps/electron/",
+      "kind": "desktop-host",
+      "owner": "client-platform",
+      "purpose": "Default Electron window with isolated renderer, owned loopback control-plane lifecycle, non-overridable packaged user-data roots, an ephemeral first-run setup handoff and a host-only independent neutral workbench layer with readable text and responsive fallbacks; its manual GitHub Release workflow is version/tag-bound, explicitly acknowledges no Developer ID/notarization, and verifies ad-hoc integrity, tamper rejection and packaged E2E before asset upload. No domain state, public registration or auth bypass.",
+      "sourceOfTruth": [
+        "docs/18-electron-client.md"
+      ],
+      "tests": [
+        "tests/electron.test.mjs",
+        "tests/cli-installation.test.mjs",
+        "tests/desktop-shell-env.test.mjs",
+        "scripts/test-packaged-electron.mjs"
+      ],
+      "allowedDependencies": [
+        "electron",
+        "node:*",
+        "HTTP health",
+        "server/data-home.mjs (pure path resolution)"
+      ],
+      "forbiddenDependencies": [
+        "Store",
+        "Provider",
+        "renderer Node access"
+      ],
+      "whenChanged": {
+        "mustUpdate": [
+          "ai/module-registry.json",
+          "docs/00-ai-map.md",
+          "apps/electron/README.md",
+          "docs/18-electron-client.md",
+          "CHANGELOG.md"
+        ],
+        "reviewIf": [
+          "security",
+          "lifecycle"
+        ]
+      },
+      "dataLayout": "Chromium userData/sessionData/browser cache, host logs and crash dumps are set before ready under the per-instance ~/.agentforge root; task workspace setting never changes application/auth paths.",
+      "workspaceDefault": "Task root uses server/data-home.mjs pure path helper for ~/agentforge, independently of isolated application state. CLI installation remains host-only."
+    },
+    {
+      "id": "server.communication-store",
+      "promptContract": "Native member sessions retain their ID across persona and selected-extension edits; new configuration is reapplied on invocation. Actual Runtime connection/cwd changes reset native context while retaining stored history and confirmed external-message cursor.",
+      "workbenchContract": "Conversation-owned attachment metadata and immutable message references; per-attempt native session binding stays out of audit events. Member-scoped 50-event console projection groups actual deliveries/attempts in one pass and validates content references against the conversation.",
+      "path": "server/communication-store.mjs",
+      "kind": "domain",
+      "owner": "server",
+      "purpose": "Store-internal persistent communication conversations, immutable messages, explicit-mention or active-roster broadcast delivery queue and isolated session bindings; validate visibility-scoped single-hop peer handoffs and atomically commit reply, child delivery and audit with rollback; a scheduled automatic-retry delivery remains pending until done or cancelled.",
+      "sourceOfTruth": [
+        "docs/17-communication.md",
+        "docs/03-domain-model.md"
+      ],
+      "tests": [
+        "tests/communication.test.mjs",
+        "tests/communication-workbench.test.mjs"
+      ],
+      "allowedDependencies": [
+        "node:crypto",
+        "Store injected state/save"
+      ],
+      "forbiddenDependencies": [
+        "HTTP",
+        "model-provider-sdk"
+      ],
+      "whenChanged": {
+        "mustUpdate": [
+          "ai/module-registry.json",
+          "docs/00-ai-map.md",
+          "server/README.md",
+          "docs/17-communication.md",
+          "CHANGELOG.md"
+        ],
+        "reviewIf": [
+          "persistence",
+          "sessions"
+        ]
+      }
+    },
+    {
+      "id": "server.communication",
+      "replyContract": "Only reply is required; omitted/null handoffToAgentId means no handoff. Supplied targets retain Store validation; unknown fields and empty replies are rejected. Task coordination and CLI contracts are unchanged.",
+      "instructionDependency": "server/prompts.mjs pure communication composition.",
+      "promptContract": "Pure separated system/current composition, environment and eligible peers in system instructions, exact target once, no recent transcript replay; final prepared prompt snapshot remains private.",
+      "workbenchContract": "Visible-message attachment paths and conversation root enter the bounded prompt without file bytes. Public runtime content and promptSnapshot persist through Run Files; audit stores references, not session transport or raw bodies.",
+      "path": "server/communication.mjs",
+      "kind": "runtime",
+      "owner": "orchestration",
+      "purpose": "Drain communication deliveries concurrently across members through independent local CLI processes; FIFO per member and isolated sessions; bind a transient provider session ID through Store, then persist only the Runtime audit summary; validate closed reply/handoff output and pass Store-projected eligible peers to the model; drain explicit child replies without workflow routing.",
+      "sourceOfTruth": [
+        "docs/17-communication.md"
+      ],
+      "tests": [
+        "tests/communication.test.mjs",
+        "tests/communication-workbench.test.mjs",
+        "scripts/test-communication-workbench.mjs"
+      ],
+      "allowedDependencies": [
+        "server/runtime/*",
+        "Store commands",
+        "node:*"
+      ],
+      "forbiddenDependencies": [
+        "store-internal-arrays",
+        "HTTP policy"
+      ],
+      "whenChanged": {
+        "mustUpdate": [
+          "ai/module-registry.json",
+          "docs/00-ai-map.md",
+          "server/README.md",
+          "docs/17-communication.md",
+          "CHANGELOG.md"
+        ],
+        "reviewIf": [
+          "provider",
+          "security"
+        ]
+      }
+    },
+    {
+      "id": "server.authentication",
+      "attachmentBoundary": "Only authenticated same-origin POST communication attachment paths accept octet-stream; exact Host/Origin and session remain required, JSON remains required for other writes.",
+      "path": "server/auth.mjs",
+      "kind": "security",
+      "owner": "server",
+      "purpose": "Single administrator credentials, persistent sessions, throttling and default-deny HTTP guard, plus a one-time Electron-owned loopback bootstrap handoff before any account exists, separate from workflow state.",
+      "sourceOfTruth": [
+        "docs/14-console-authentication.md"
+      ],
+      "tests": [
+        "tests/auth.test.mjs"
+      ],
+      "allowedDependencies": [
+        "node:*"
+      ],
+      "forbiddenDependencies": [
+        "server/store.mjs",
+        "model-provider-sdk"
+      ],
+      "whenChanged": {
+        "mustUpdate": [
+          "ai/module-registry.json",
+          "docs/00-ai-map.md",
+          "server/README.md",
+          "docs/14-console-authentication.md",
+          "CHANGELOG.md"
+        ],
+        "reviewIf": [
+          "security"
+        ]
+      }
+    },
+    {
+      "id": "server.http-control-plane",
+      "mcpEditing": "Authenticated MCP PUT validates a new immutable candidate, resolves all current selectors then commits one Store transaction; failure hides unused candidates without rewriting history.",
+      "staticIcon": "Application PNG icon is served as image/png through existing static-root containment and authentication policy; no new file bridge.",
+      "communicationWorkbench": "Authenticated 20 MiB binary upload and integrity-bound attachment download; member/cursor console, execution-content and prompt endpoints check conversation ownership. No new host bridge or CLI commands.",
+      "workspaceSettings": "Authenticated workspace save validates non-root absolute input, creates missing directories recursively and checks canonical directory permissions before Store persistence; failure preserves saved settings and logs original cause. No migration of existing tasks, deletion of files, or new CLI setting command.",
+      "path": "server/index.mjs",
+      "workingFileDownload": "Authenticated attachment/octet-stream response streams selected current files through Run Files; transmission errors are diagnosed without attempting a second JSON response.",
+      "kind": "runtime",
+      "owner": "server",
+      "purpose": "Translate bounded JSON CRUD, status-only authenticated GitHub/GitLab pull-credential configuration, a guarded Electron-first-run setup route, workspace reads, message submission and explicit clarification replies, human-requested immediate retry of queued Dispatch backoffs, pause/resume/terminate, archive, recoverable Task deletion with Store-owned eligibility precheck before isolated Run-file cleanup reporting, SSE, restricted files with stable path-free Artifact read failures and frozen SHA-256/byte integrity checks, startup dispatch recovery and five-minute idle patrol into Store and Orchestrator commands; inject the private URL-to-credential resolver only into Run execution. Port remains 4310.",
+      "sourceOfTruth": [
+        "docs/02-system-architecture.md",
+        "docs/03-domain-model.md",
+        "docs/00-ai-map.md"
+      ],
+      "tests": [
+        "tests/smoke.test.mjs"
+      ],
+      "allowedDependencies": [
+        "server/store.mjs",
+        "server/orchestrator.mjs",
+        "server/run-files.mjs",
+        "node:*"
+      ],
+      "forbiddenDependencies": [
+        "model-provider-sdk",
+        "browser-owned-domain-state"
+      ],
+      "whenChanged": {
+        "mustUpdate": [
+          "ai/module-registry.json",
+          "docs/00-ai-map.md",
+          "CHANGELOG.md"
+        ],
+        "reviewIf": [
+          "public API",
+          "auth",
+          "tenant",
+          "security"
+        ]
+      }
+    },
+    {
+      "id": "server.domain-store",
+      "workspaceFiles": "Workflow artifactPaths are canonical workspace-relative file/directory hints, empty by default; preserve custom paths on reload and frozen tasks without docs rewrites. File metadata may refer to any business root.",
+      "pluginUpdates": "Store persists default-enabled checks and a validated 1-1440 minute period (default two), and atomically compares/replaces current employee bindings by installation source with a system audit; frozen work and MCP references remain immutable.",
+      "mcpEditing": "replaceMcpExtension atomically compares current employee runtime bindings, rebinds current selectors and retires the previous version with an audit; frozen tasks/deliveries remain unchanged.",
+      "promptContract": "Member input cursors confirm only accepted calls. Trace.providerSessionId remains null for unconfirmed Codex placeholders and binds only the real thread ID. Responsibilities derive from actual Dispatches, not static Task nodeAssignments.",
+      "path": "server/store.mjs",
+      "kind": "domain",
+      "owner": "server",
+      "purpose": "Own catalogs, Task/Run state, frozen participants, messages, sessions, dispatch queues and transactions. Record employee Decisions/Defects/Artifacts without judging results or requiring files. requestHumanAcceptance stores the manager intent directly; confirmRunCompletion records the human decision. Historical review facts stay unchanged; no automatic pass/rework override.",
+      "sourceOfTruth": [
+        "docs/03-domain-model.md",
+        "docs/02-system-architecture.md"
+      ],
+      "tests": [
+        "tests/smoke.test.mjs",
+        "tests/configuration-catalog.test.mjs",
+        "tests/runtime-profiles.test.mjs",
+        "tests/dispatch-routing.test.mjs"
+      ],
+      "allowedDependencies": [
+        "server/persistence.mjs",
+        "server/execution-logs.mjs",
+        "node:*"
+      ],
+      "forbiddenDependencies": [
+        "HTTP",
+        "model-provider-sdk",
+        "external-tool-sdk"
+      ],
+      "whenChanged": {
+        "mustUpdate": [
+          "ai/module-registry.json",
+          "docs/00-ai-map.md",
+          "docs/03-domain-model.md",
+          "CHANGELOG.md"
+        ],
+        "reviewIf": [
+          "status",
+          "event",
+          "permission",
+          "persistence"
+        ]
+      },
+      "failureDelivery": "Store stops non-retryable or exhausted dispatches while preserving traces; input cursors and context hashes acknowledge actual model activity, not snapshots.",
+      "taskIdentity": "New Task IDs use random UUIDs, preventing same-millisecond cross-process directory collisions under the shared default task root; historical Task/Run IDs and paths unchanged."
+    },
+    {
+      "id": "server.sqlite-persistence",
+      "path": "server/persistence.mjs",
+      "kind": "runtime",
+      "owner": "server",
+      "purpose": "Load persisted event JSON/position comparison baselines so restart saves avoid unchanged row rewrites while detecting in-place startup migration; atomically save metadata plus incremental immutable event rows, retain rollback and legacy snapshot replacement without changing Store contracts.",
+      "sourceOfTruth": [
+        "docs/07-sqlite-persistence.md",
+        "docs/02-system-architecture.md"
+      ],
+      "tests": [
+        "tests/smoke.test.mjs"
+      ],
+      "allowedDependencies": [
+        "node:sqlite",
+        "node:fs",
+        "node:path"
+      ],
+      "forbiddenDependencies": [
+        "HTTP",
+        "model-provider-sdk",
+        "domain-rules"
+      ],
+      "whenChanged": {
+        "mustUpdate": [
+          "ai/module-registry.json",
+          "docs/00-ai-map.md",
+          "docs/07-sqlite-persistence.md",
+          "server/README.md",
+          "CHANGELOG.md"
+        ],
+        "reviewIf": [
+          "persistence",
+          "schema",
+          "security"
+        ]
+      }
+    },
+    {
+      "id": "server.run-files",
+      "communicationFiles": "Original duplicate-safe attachment files live under communications/chat/attachments/id/name; no-follow component checks, SHA-256/bytes and 20 MiB bound. Redacted call content lives separately under chat/.agentforge/delivery/attempt and uses existing private integrity-bound reader.",
+      "path": "server/run-files.mjs",
+      "workingFileDownload": "Complete current-file streams share whole-workspace, sensitive-path and symlink checks with previews; no-follow regular file descriptor ownership passes to an auto-closing stream without the preview byte limit.",
+      "kind": "runtime",
+      "owner": "artifact-runtime",
+      "purpose": "Own local Run directories, private staging and transient exact-host GitHub/GitLab HTTPS credential helpers for clone/fetch without leaking configuration tokens into URLs, arguments, markers or artifacts, recoverable startup reconciliation for user-requested Task deletion, sanitized trace files and private integrity-bound execution-content JSON, self-excluding workspace snapshots with read-only Git inventories excluding ignored runtime and common credential entries, bounded regular-business-file Artifact capture across the task workspace, independent of workflow location hints that rejects detectable sensitive-file or symbolic-link changes without copying their paths or contents, working-directory reads that reject symbolic-link roots and path components, Artifact reads that reject symbolic-link path components and verify frozen SHA-256/byte metadata before returning content, streaming 20 MiB-bounded whole-file Artifact integrity verification for delivery review independent of the 512 KiB text preview limit, 20 MiB-bounded raster raw-image reads, no-follow regular workspace-ready marker reads/writes, and declared repository-tree reads that reject symbolic links and omit internal and common credential entries.",
+      "sourceOfTruth": [
+        "docs/08-real-local-agent-runtime.md",
+        "docs/03-domain-model.md"
+      ],
+      "tests": [
+        "tests/smoke.test.mjs",
+        "tests/run-files-security.test.mjs"
+      ],
+      "allowedDependencies": [
+        "node:crypto",
+        "node:fs",
+        "node:path",
+        "node:child_process",
+        "node:util"
+      ],
+      "forbiddenDependencies": [
+        "HTTP",
+        "model-provider-sdk",
+        "domain-rules"
+      ],
+      "whenChanged": {
+        "mustUpdate": [
+          "ai/module-registry.json",
+          "docs/00-ai-map.md",
+          "docs/08-real-local-agent-runtime.md",
+          "docs/13-local-artifact-rendering.md",
+          "server/README.md",
+          "CHANGELOG.md"
+        ],
+        "reviewIf": [
+          "artifact",
+          "filesystem",
+          "security"
+        ]
+      }
+    },
+    {
+      "id": "server.workspace-git",
+      "path": "server/workspace-git.mjs",
+      "kind": "runtime",
+      "owner": "artifact-runtime",
+      "purpose": "Initialize managed Run Git roots and existing checkout gitlinks without modifying employee files or child HEADs; observe repository status and bounded task-initial-gitlink/worktree diffs for child repositories and task-initial/worktree diffs for root business files, excluding inherited Git repository selectors. No business acceptance decisions.",
+      "sourceOfTruth": [
+        "docs/13-local-artifact-rendering.md"
+      ],
+      "tests": [
+        "tests/workspace-git.test.mjs"
+      ],
+      "allowedDependencies": [
+        "node:child_process",
+        "node:util",
+        "node:fs",
+        "node:path"
+      ],
+      "forbiddenDependencies": [
+        "HTTP",
+        "model-provider-sdk",
+        "domain-rules"
+      ],
+      "whenChanged": {
+        "mustUpdate": [
+          "ai/module-registry.json",
+          "docs/00-ai-map.md",
+          "docs/13-local-artifact-rendering.md",
+          "server/README.md",
+          "tests/README.md",
+          "CHANGELOG.md"
+        ],
+        "reviewIf": [
+          "filesystem",
+          "source control"
+        ]
+      }
+    },
+    {
+      "id": "server.local-agent-runtime",
+      "pluginUpdates": "Git HEAD/ref/sha probing and original-market/dependency provenance prepare only requested installed names. Automatic source clones are transient; failed candidates never replace active bindings, and bundled MCP is excluded from auto installation.",
+      "mcpEditing": "mcpEditInput preserves unchanged redacted JSON fields and reuses current configuration validation; edits create immutable files and leave frozen references readable.",
+      "nativeSkills": "Selected Claude plugins retain native Skill activation with ambient settings excluded. Selected Codex Skills use an invocation-owned app-server with explicit extra roots, native per-thread enablement and exact session resume, rather than prompt path instructions. Non-Skill Codex calls retain exec transport over the same native thread store.",
+      "packagedHistory": "Codex receives the complete bridge-owned MCP child environment, including Electron Node mode, plus required=true. Provider environment still strips Electron bootstrap fields. A missing history service fails native startup/resume instead of silently omitting tools; no global config change.",
+      "snapshotPresentation": "Complete redacted system/current audit snapshots render together with confirmed native session ID; no hidden Provider history is claimed.",
+      "instructionDependency": "Application instructions come from the caller; Runtime registers native capabilities instead of generating Skill-reading instructions, with no Store mutation.",
+      "promptContract": "Claude system files and Codex developer instructions/native protocol separate application instructions/current input on exact session resume. No platform Skill path injection; diagnostics redact both layers.",
+      "path": "server/runtime/",
+      "kind": "runtime",
+      "owner": "agent-runtime",
+      "purpose": "Launch/cancel local Claude Code (default) or Codex CLI, normalize JSONL into fixed summaries plus separately transported, bounded redacted public text/thinking/tool content; exclude prompts, raw stdout/stderr, signatures and provider session IDs from durable event payloads; preserve redacted original failures separately from retry eligibility, resume explicit member sessions, and strip Electron-only Node bootstrap settings plus the one-time setup secret before spawning a configured Provider. configuration.mjs manages private immutable MCP JSON, containment-checked Git plugin catalogs and status-only GitHub/GitLab HTTPS pull tokens; no domain writes.",
+      "sourceOfTruth": [
+        "docs/15-employee-runtime-configuration.md",
+        "docs/08-real-local-agent-runtime.md",
+        "docs/02-system-architecture.md"
+      ],
+      "tests": [
+        "tests/cli-environment.test.mjs",
+        "tests/diagnostics.test.mjs",
+        "tests/runtime-configuration.test.mjs",
+        "tests/smoke.test.mjs",
+        "tests/model-catalog.test.mjs",
+        "tests/runtime-profiles.test.mjs",
+        "tests/marketplace.test.mjs",
+        "tests/history.test.mjs",
+        "scripts/test-prompt-e2e.mjs",
+        "scripts/test-packaged-electron.mjs"
+      ],
+      "allowedDependencies": [
+        "node:crypto",
+        "node:path",
+        "node:util",
+        "node:child_process",
+        "node:fs",
+        "node:readline",
+        "node:os",
+        "server/runtime/registry.mjs"
+      ],
+      "forbiddenDependencies": [
+        "server/store.mjs",
+        "HTTP",
+        "browser-owned-domain-state"
+      ],
+      "whenChanged": {
+        "mustUpdate": [
+          "ai/module-registry.json",
+          "docs/00-ai-map.md",
+          "docs/08-real-local-agent-runtime.md",
+          "server/runtime/README.md",
+          "server/README.md",
+          "CHANGELOG.md"
+        ],
+        "reviewIf": [
+          "provider",
+          "permissions",
+          "filesystem",
+          "security"
+        ]
+      },
+      "extensionContract": "Atomic source-wide Claude/Codex/Agent Plugins installation resolves relative/local and HTTPS github/url/git-subdir marketplace entries with pinned revisions; unsupported source types fail the whole batch. Canonical ancestor aliases are accepted without allowing linked managed roots. Per-provider manifests/components and compatibility/reasons prevent incompatible employee bindings. Distinct bundled MCP variants split independently, with Codex cwd/env_vars retained and applied by the private launcher. Selected-only agent/hook projections and SDK stdio/SSE/Streamable HTTP bridges never write global CLI configuration. Installation materializes file/directory links within each repository/local sourceRoot, preserving names, bytes and executable mode; dangling/cyclic/external links and special files fail atomically with plugin/path context. Installed snapshots remain link-free and integrity checked. Codex invocations explicitly disable account Apps alongside ambient MCP/plugin discovery; selected MCPs and platform history remain enabled. This is tool-source isolation, not an OS sandbox.",
+      "extensionAdapters": [
+        "server/runtime/plugin-hooks.mjs",
+        "server/runtime/codex-app-server.mjs"
+      ]
+    },
+    {
+      "id": "server.orchestrator",
+      "instructionDependency": "server/prompts.mjs pure Task composition.",
+      "promptContract": "Manager-only workflow system instructions; environment and compact consultation roster in system layer. Explicit nextAgentId controls dispatch; Store supplies unacknowledged cross-member inputs/context deltas; model content or success acknowledges input. Transient failures have three attempts; deterministic/unknown failures stop.",
+      "path": "server/orchestrator.mjs",
+      "kind": "runtime",
+      "owner": "orchestration",
+      "purpose": "Coordinate persistent dispatches, member sessions, consultations and human messages; interpret optional routing fields while recording ordinary text. Execute manager routing and human-acceptance requests directly without result verification, defect gates or a separate final review. Capture file snapshots best-effort and retain execution diagnostics.",
+      "sourceOfTruth": [
+        "docs/02-system-architecture.md",
+        "docs/03-domain-model.md",
+        "docs/22-prompt-assembly.md"
+      ],
+      "tests": [
+        "tests/smoke.test.mjs",
+        "tests/dispatch-routing.test.mjs"
+      ],
+      "allowedDependencies": [
+        "server/store.mjs",
+        "server/run-files.mjs",
+        "server/runtime/*",
+        "node:*"
+      ],
+      "forbiddenDependencies": [
+        "store-internal-arrays",
+        "unapproved-tools",
+        "unbounded-network"
+      ],
+      "whenChanged": {
+        "mustUpdate": [
+          "ai/module-registry.json",
+          "docs/00-ai-map.md",
+          "docs/02-system-architecture.md",
+          "CHANGELOG.md"
+        ],
+        "reviewIf": [
+          "assignment",
+          "retry",
+          "approval",
+          "budget",
+          "output validation"
+        ]
+      }
+    },
+    {
+      "id": "client.console-projections",
+      "promptPresentation": "Full prompt rendering uses immutable redacted audit text. Tool phases pair by Trace and native call ID; distinct calls stay separate. Empty tool_progress summaries are hidden, real content remains.",
+      "consoleNoise": "buildConsoleEntries suppresses known content-free routine lifecycle/provider notifications before grouping, normalizing the exact Task Provider-type prefix and omitting trace.accepted persistence acknowledgement. Bodies, tools, abnormal/unknown events and all original audit facts remain; raw pagination, HTTP and CLI are unchanged.",
+      "recordPresentation": "Collaboration tone/statusCode project existing message/delivery facts solely for UI styling, not new business status or CLI fields.",
+      "path": "client/",
+      "kind": "presentation-core",
+      "owner": "client-platform",
+      "purpose": "Project authoritative HTTP/SSE read models into deterministic Console statuses including human-attention task filters and next-action labels, event categories, tool groups, recorded Shell command and Read/Write file summaries with parsed Write text, collaboration messages from humans to agents, agents to agents, or agents to the team, participant lists and workflow focus shared by supported clients; never own client transport or domain state.",
+      "sourceOfTruth": [
+        "docs/01-product-requirements.md",
+        "docs/02-system-architecture.md",
+        "docs/18-electron-client.md"
+      ],
+      "tests": [
+        "tests/client-projections.test.mjs"
+      ],
+      "allowedDependencies": [
+        "browser-safe ECMAScript",
+        "authoritative API read models"
+      ],
+      "forbiddenDependencies": [
+        "DOM",
+        "browser-storage",
+        "Node APIs",
+        "server/*",
+        "domain-state-mutation",
+        "provider-runtime"
+      ],
+      "whenChanged": {
+        "mustUpdate": [
+          "ai/module-registry.json",
+          "docs/00-ai-map.md",
+          "client/README.md",
+          "docs/18-electron-client.md",
+          "CHANGELOG.md"
+        ],
+        "reviewIf": [
+          "read-model contract",
+          "client consistency",
+          "terminal Run presentation",
+          "domain leakage"
+        ]
+      }
+    },
+    {
+      "id": "web.console",
+      "pluginUpdates": "Settings owns enabled, integer-minute period, save and immediate check controls with draft-preserving five-second active-panel polling; marketplace only manages installed items. Server owns scheduling, no MCP or app auto-upgrade.",
+      "defaultSelections": "Unselected communication opens the latest updated conversation after a successful list read. Unselected task Console opens the most recently started known member. Explicit choices remain stable during refresh; empty/error states never invent a target.",
+      "mcpEditing": "Team empty state has no employee-creation link. MCP detail edits name/description/redacted JSON through the shared form, preserves drafts on error, refreshes on success and leaves frozen work unchanged.",
+      "collaborationFollowup": "Only real chronological collaboration messages are rendered: no appended acceptance summary panel and no stop-inquiries UI. Unarchived tasks retain messaging, archived tasks remain read-only, and final completion still requires the existing human acknowledgement. Human bubbles use 10px/12px padding without a forced minimum width.",
+      "consoleNoise": "Task and communication share client routine-notification filtering; prompt chronology and raw page boundaries stay intact, empty state describes content rather than lifecycle notifications.",
+      "promptContract": "Shared Task/communication Console renders full redacted system/current prompt and confirmed Provider session ID, without scope boilerplate or tool audit detail. Human collaboration metadata stays outside the padded right-aligned bubble; known mentions are bold ink.",
+      "directoryHeaders": "Task/archive page names appear once visually in the topbar; the inner semantic heading is clipped without layout space on Web and desktop. Team/workflow search by name/description before paging. Task filters have bounded title width and reset/archive/create order. Directory toolbar is compact 44px, without a top divider; drafts and action focus survive refresh. Sidebar reuses the application icon PNG.",
+      "communicationToolbar": "Only latest/refresh in the top toolbar; omit a redundant sole-member selector and keep group member selection and older-history controls below the toolbar without changing paging or execution contracts.",
+      "communicationWorkbench": "Stable employee-palette plugin/MCP avatars, no redundant composer label or outgoing pending dot, upload-before-send attachments with retry-preserved draft/references and safe downloads; right-hand 50/50 Console splits the full header/content height while its toggle stays in the chat header. Reuses task renderer/hydration with member/cursor paging, active-only polling and scoped content-cache refresh.",
+      "recordPresentation": "Prompt rows merge once by invocation timestamp within the loaded member-page window rather than pinning above partial history. Active roles, collaboration and private/group messages use shared accessible semantic accents with labels retained.",
+      "path": "web/",
+      "kind": "presentation",
+      "owner": "web",
+      "consoleToolPresentation": "Visible closed tool headers load integrity-checked redacted command/file summaries independently of expanded bodies, sharing the bounded content cache; completed Read shows Done, failed Read preserves output, Write displays recorded content as escaped text with honest fallback.",
+      "workspacePresentation": "Current files and CHANGE share the complete real workspace hierarchy with lazily paged current directories, including collapsed-root spacing and change badges. Selected current files can be downloaded through authenticated attachment streaming; failed downloads stay in the task view. Per-directory no-change messages are omitted; only fully loaded, initialized and unchanged repositories produce one overall empty state. Artifact history and CLI contracts remain unchanged.",
+      "purpose": "Render digital employee type/systemPrompt/capability editing plus status-only GitHub/GitLab HTTPS pull-token management, Team manager and human membership, explicit line-separated Task acceptance-criteria entry, workflow-switch-safe Task responsibility defaults, self-correcting per-field validation feedback, default-off source-bound Task delivery authorization, frozen Run roles, task-wide current directories, safe workspace-kind labels rather than host paths in bootstrap-driven task lists, a task center that separates human attention from human-confirmed completion, preserves a newly created backlog Task and its retry action when the subsequent Run launch is rejected, and exposes an explicitly acknowledged deletion command only when Store reports no active Run or unfinished terminal inquiry, with truthful inquiry and isolated-file cleanup feedback, and an evidence-led collaboration review record that projects recorded manager findings, overall findings and real Artifact snapshots and the bound delivery-review Trace before a human acknowledgement can submit completion while labeling legacy summaries honestly; render Runtime summaries plus authenticated integrity-bound public execution content as escaped text, never legacy raw fields or unavailable hidden reasoning; retain a guarded first-run Electron setup page that never receives a bootstrap secret, a shared current-file/CHANGE explorer without a delivery-version page while preserving backend Artifact facts, a read-only Defect quality-risk ledger with filenames and source Trace entry points, a human message inbox with explicit question selection and non-interrupting queued instructions, plus visible immediate-retry and safe failed-Run recovery commands that requeue project-manager assessment, and truthful acknowledged Run-termination wording. It binds browser interactions and composes client/ pure projections, but does not own shared read-model rules or domain objects.",
+      "sourceOfTruth": [
+        "docs/01-product-requirements.md",
+        "docs/06-design-system.md"
+      ],
+      "tests": [
+        "tests/smoke.test.mjs",
+        "tests/settings.test.mjs",
+        "tests/communication.test.mjs"
+      ],
+      "allowedDependencies": [
+        "/api/*",
+        "/client/console-projections.mjs",
+        "web/styles.css",
+        "@antv/x6 via /vendor/x6.js",
+        "elkjs via /vendor/elk.js",
+        "marked/dompurify/highlight.js via fixed local /vendor routes"
+      ],
+      "forbiddenDependencies": [
+        "direct-store-mutation",
+        "model-provider-sdk",
+        "secret-values"
+      ],
+      "whenChanged": {
+        "mustUpdate": [
+          "ai/module-registry.json",
+          "docs/00-ai-map.md",
+          "web/README.md",
+          "CHANGELOG.md"
+        ],
+        "reviewIf": [
+          "new view",
+          "new command",
+          "terminal Run presentation",
+          "visual token",
+          "accessibility"
+        ]
+      },
+      "extensionPresentation": "Employee/plugin/MCP cards with same-row search and create/install actions; source-wide plugin installation, lazy component/redacted JSON details with confirmed deletion, and searchable multi-select employee chips. Cards/details/pickers label Claude/Codex support, component applicability and exact incompatibility reasons; Runtime switching preserves but rejects incompatible choices. Empty/loading/no-match/error states occupy a separate full-width region outside the card grid. Human collaboration and communication messages align right based on sender identity only; employees stay left without changing shared projection/CLI fields. Compatibility is static, not a claim of executed account/dependency validation. Removal rules and immutable history belong to Store. Plugin details use one bounded body scroller with sticky component tabs and fixed title/actions, including long overviews; employee/plugin/MCP cards reserve stable heading/description geometry with complete fields available in details/edit. Employee plugin/MCP pickers dismiss on mouse leave, form-outside pointerdown or focus leaving the combo; repeated input clicks reopen, keyboard and candidate traversal remain available, hidden option focus returns to input. Listeners belong to the form, not global per-open document handlers; HTTP/CLI/loading contracts are unchanged.",
+      "cliPresentation": "CLI installation category/panel is host-only; ordinary browser deep links normalize to general. Task workspace text does not select a Web/Desktop target."
+    },
+    {
+      "id": "web.manual-graphs",
+      "path": "web/manual-graphs.mjs",
+      "kind": "presentation",
+      "owner": "web",
+      "purpose": "Define read-only X6 node/edge graphs for the developer manual plus fixed template and Task workflow direction maps. ELK computes dynamic workflow layering and orthogonal bend points; manual diagrams retain minimap/navigation while workflow maps are non-interactive fixed overviews, with scoped lifecycle and no domain writes.",
+      "sourceOfTruth": [
+        "docs/01-product-requirements.md",
+        "docs/02-system-architecture.md",
+        "docs/03-domain-model.md",
+        "docs/12-local-diagram-rendering.md"
+      ],
+      "tests": [
+        "tests/smoke.test.mjs"
+      ],
+      "allowedDependencies": [
+        "@antv/x6 via /vendor/x6.js",
+        "elkjs via /vendor/elk.js",
+        "web/styles.css"
+      ],
+      "forbiddenDependencies": [
+        "/api/* mutation",
+        "direct-store-mutation",
+        "model-provider-sdk"
+      ],
+      "whenChanged": {
+        "mustUpdate": [
+          "ai/module-registry.json",
+          "docs/00-ai-map.md",
+          "docs/12-local-diagram-rendering.md",
+          "web/README.md",
+          "CHANGELOG.md"
+        ],
+        "reviewIf": [
+          "new diagram data source",
+          "dependency",
+          "accessibility",
+          "visual token"
+        ]
+      }
+    },
+    {
+      "id": "tests",
+      "recordPresentation": "Regression coverage includes partial/running prompt history, interleaved calls, transport-page boundaries, truthful pending/answered colors, stable safe sender tones and exclusion of visual metadata from CLI JSON.",
+      "path": "tests/",
+      "kind": "verification",
+      "owner": "quality",
+      "purpose": "Executable workflow, context-isolation, Electron package-path/bootstrap-secret contracts and packaged fixture-backed Task→Artifact→manager-review→visible-human-confirmation isolation, bootstrap Task-summary host-path omission with full Task/Run path retention, private GitHub/GitLab HTTPS pull-token persistence/host binding/removal and transient clone-helper non-leakage, frozen Task acceptance-criteria validation/migration and propagation through the local Provider Task→manager→delivery-review path, delivery-review overall verdict/Trace binding with same-Run Artifact acceptance and rejection paths, including a non-code Task without a required testing report, including a guard that the real history E2E cannot bypass the visible disabled-before-acknowledgement human completion action, complete closed node_result local validation and frozen-workflow Decision/Defect reference rejection, declared Artifact acceptance/rejection including rejection of zero-change and detectable sensitive-file/symbolic-link business delivery, frozen SHA-256/byte Artifact read rejection after snapshot tampering, same-Trace Defect Markdown-evidence binding and direct-mutation rejection, failure paths including human-requested queued-backoff retry and user termination classified as Run/Trace cancellation rather than provider failure, created-Task Run-launch rejection or uncertainty recovery, failed-Run recovery after workspace preparation, terminal inquiry protection before Task deletion, legacy Console audit API payload redaction, AI contract, shared client projection, and native-host boundary guarantees.",
+      "sourceOfTruth": [
+        "tests/README.md",
+        "AGENTS.md"
+      ],
+      "tests": [
+        "tests/*.test.mjs"
+      ],
+      "allowedDependencies": [
+        "server/*",
+        "node:test",
+        "node:assert"
+      ],
+      "forbiddenDependencies": [
+        "production-secrets",
+        "network-side-effects"
+      ],
+      "whenChanged": {
+        "mustUpdate": [
+          "ai/module-registry.json",
+          "docs/00-ai-map.md",
+          "CHANGELOG.md"
+        ],
+        "reviewIf": [
+          "coverage gap",
+          "new contract"
+        ]
+      }
+    },
+    {
+      "id": "docs",
+      "path": "docs/",
+      "kind": "governance",
+      "owner": "product-architecture",
+      "purpose": "Human-readable product, domain, architecture, review, roadmap, and design-system truth.",
+      "sourceOfTruth": [
+        "docs/00-ai-map.md",
+        "docs/03-domain-model.md",
+        "AGENTS.md"
+      ],
+      "tests": [
+        "tests/ai-contract.test.mjs"
+      ],
+      "allowedDependencies": [
+        "Markdown"
+      ],
+      "forbiddenDependencies": [
+        "stale-contracts"
+      ],
+      "whenChanged": {
+        "mustUpdate": [
+          "CHANGELOG.md"
+        ],
+        "reviewIf": [
+          "domain",
+          "architecture",
+          "security",
+          "visual language"
+        ]
+      }
+    },
+    {
+      "id": "scripts",
+      "workspaceFiles": "test-workspace-files.mjs validates complete workspace browsing, paged lazy directories, custom workflow paths, media CHANGE/download and opt-in real Claude code delivery with independent testing and human confirmation in an isolated Web/packaged client.",
+      "pluginUpdates": "test-plugin-updates.mjs exercises actual HTTPS Git installation and production two-minute scheduling through Web/packaged UI; opt-in real Claude task verifies native updated Skill output and human confirmation. Test-only Git TLS fixture is never packaged.",
+      "mcpEditing": "test-marketplace-edit.mjs uses isolated HTTP/CLI and actual Web or packaged Electron UI to check empty teams, edit/cancel/errors, redacted values, atomic rebinding and compatibility failures. No operator data is modified.",
+      "releaseStorage": "The release workflow deletes only its exact uploaded artifact ID after successful Release publication; failed publishing retains its transfer artifact for one day. Directory-header UI regression checks no duplicate visual task title and current/archive topbar names in wide/narrow Web and desktop.",
+      "viewportEvidence": "Real Provider acceptance waits for renderer viewport geometry after resizing before saving narrow-window evidence; OS window resize acknowledgement alone is not visual readiness.",
+      "communicationWorkbench": "test-communication-workbench.mjs explicitly opts into real source Claude attachment-reading or controlled packaged acceptance; isolated host HOME, database and download roots, no credential copying or real-instance reset.",
+      "recordPresentation": "Packaged fixture E2E checks actual running and terminal tabs, greater-than-50-event history with ordinary prompt rows, and human/employee communication accents. Source smoke waits for the initial member page before loading older records, rather than treating metadata-only prompt rows as loaded history.",
+      "path": "scripts/",
+      "kind": "developer-tooling",
+      "owner": "developer-experience",
+      "purpose": "Build and verification tooling; packaged UI checks trigger explicit employee selection and viewport-lazy content, including closed Bash/Read/Write headers, grouped Read success/failure and literal Write text in narrow windows.",
+      "sourceOfTruth": [
+        "AGENTS.md",
+        "CONTRIBUTING.md"
+      ],
+      "tests": [
+        "tests/ai-contract.test.mjs",
+        "tests/history.test.mjs",
+        "scripts/test-history-e2e.mjs",
+        "scripts/test-packaged-electron.mjs",
+        "scripts/test-communication-workbench.mjs",
+        "scripts/test-directory-headers.mjs"
+      ],
+      "allowedDependencies": [
+        "node:fs",
+        "node:child_process",
+        "node:path"
+      ],
+      "forbiddenDependencies": [
+        "silent-bypass",
+        "network-side-effects"
+      ],
+      "whenChanged": {
+        "mustUpdate": [
+          "ai/module-registry.json",
+          "docs/00-ai-map.md",
+          "CHANGELOG.md"
+        ],
+        "reviewIf": [
+          "enforcement",
+          "security",
+          "commit policy"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>设置工作区 · AgentForge</title><link rel="stylesheet" href="/login.css"></head>
+<body>
+  <main class="login-card">
+    <div class="brand">AgentForge <span>AI TEAM OS</span></div>
+    <h1>设置本机工作区</h1>
+    <p class="intro">创建当前客户端工作区的管理员。该一次性入口只由此桌面客户端启动，不会创建公开注册。</p>
+    <form id="setup-form">
+      <label for="username">管理员用户名</label><input id="username" name="username" autocomplete="username" maxlength="64" required autofocus>
+      <label for="password">密码</label><div class="password-field"><input id="password" name="password" type="password" autocomplete="new-password" maxlength="128" required><button id="toggle-password" type="button" aria-label="显示密码" aria-pressed="false">显示</button></div>
+      <label for="confirmation">确认密码</label><input id="confirmation" name="confirmation" type="password" autocomplete="new-password" maxlength="128" required>
+      <p id="setup-error" role="alert" aria-live="polite"></p>
+      <button class="submit" type="submit">创建管理员并进入工作区</button>
+    </form>
+    <p class="help">用户名为 1–64 位字母、数字、点、下划线或连字符；密码为 10–128 字符。</p>
+    <footer>本机单管理员 · 安全会话</footer>
+  </main>
+  <script src="/setup.js" defer></script>
+</body></html>

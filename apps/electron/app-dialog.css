@@ -1,0 +1,18 @@
+/* Layout only; colors, typeface, buttons and focus reuse the desktop workbench. */
+* { box-sizing:border-box; }
+/* Never scrollable: main measures the natural content height and sizes the
+   window to it, so hidden overflow only guards against mid-resize races. */
+html, body { overflow:hidden; }
+body.app-dialog { margin:0; padding:0; color:var(--ink); background:var(--paper); }
+.app-dialog main { display:flex; flex-direction:column; min-height:100vh; }
+.app-dialog header { padding:18px 22px 10px; }
+.app-dialog h1 { margin:0 0 6px; font-size:14px; font-weight:600; letter-spacing:0; }
+.app-dialog[data-kind="error"] h1 { color:var(--danger-ink); }
+.app-dialog header p { margin:0; font-size:12px; line-height:1.6; overflow-wrap:anywhere; }
+.dialog-content { padding:0 22px; }
+.dialog-detail { margin:8px 0 0; padding:8px 10px; border:1px solid var(--line); border-radius:var(--desktop-radius); background:var(--surface-soft); color:var(--muted); font:11px/1.6 ui-monospace,SFMono-Regular,monospace; overflow-wrap:anywhere; user-select:text; }
+.app-dialog footer { display:flex; flex-wrap:wrap; flex:none; justify-content:flex-end; gap:8px; margin-top:auto; padding:14px 22px 16px; }
+.app-dialog footer button { min-height:30px; padding:5px 12px; border:1px solid var(--line); border-radius:var(--desktop-radius); font-size:12px; cursor:pointer; }
+.app-dialog .ghost-button { color:var(--ink); background:var(--paper); }
+.app-dialog .ghost-button:hover { background:var(--desktop-hover); }
+.app-dialog .primary-button { color:var(--paper); background:var(--desktop-action); border-color:var(--desktop-action); }

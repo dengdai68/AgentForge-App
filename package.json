@@ -1,0 +1,111 @@
+{
+  "name": "agentforge-app",
+  "version": "0.1.1-beta.88",
+  "private": true,
+  "license": "Apache-2.0",
+  "description": "Local AI teams powered by Claude Code and Codex",
+  "repository": { "type": "git", "url": "https://github.com/dengdai68/AgentForge-App.git" },
+  "homepage": "https://github.com/dengdai68/AgentForge-App#readme",
+  "bugs": { "url": "https://github.com/dengdai68/AgentForge-App/issues" },
+  "type": "module",
+  "main": "apps/electron/main.mjs",
+  "bin": {
+    "agentforge": "cli/main.mjs"
+  },
+  "scripts": {
+    "cli": "node cli/main.mjs",
+    "auth:setup": "node scripts/auth-setup.mjs",
+    "start": "electron apps/electron/main.mjs",
+    "dev": "electron apps/electron/main.mjs",
+    "start:server": "node server/index.mjs",
+    "dev:server": "node --watch server/index.mjs",
+    "test": "node scripts/run-tests.mjs",
+    "check:ai": "node scripts/verify-ai-contract.mjs",
+    "check:impact": "node scripts/check-module-impact.mjs",
+    "check:commit": "node scripts/check-commit-message.mjs",
+    "desktop": "electron apps/electron/main.mjs",
+    "desktop:install": "node node_modules/electron/install.js",
+    "predesktop:test": "npm run desktop:install",
+    "desktop:test": "node scripts/test-electron.mjs",
+    "desktop:check": "node --check apps/electron/main.mjs && node --test tests/electron.test.mjs",
+    "prepackage:mac": "npm run desktop:install",
+    "package:mac": "electron-builder --mac --arm64 --publish never",
+    "package:mac:check": "node scripts/test-packaged-electron.mjs",
+    "mac:check": "npm run desktop:check",
+    "mac:run": "npm run desktop",
+    "setup:hooks": "git config core.hooksPath .githooks"
+  },
+  "engines": {
+    "node": ">=22.12"
+  },
+  "dependencies": {
+    "@antv/x6": "3.1.8",
+    "@modelcontextprotocol/sdk": "1.30.1",
+    "dompurify": "^3.4.15",
+    "elkjs": "^0.10.0",
+    "highlight.js": "^11.12.0",
+    "marked": "^18.0.12"
+  },
+  "devDependencies": {
+    "electron": "44.4.3",
+    "electron-builder": "26.15.3",
+    "playwright-core": "1.63.0"
+  },
+  "build": {
+    "appId": "com.agentforge.desktop",
+    "productName": "AgentForge",
+    "electronDist": "node_modules/electron/dist",
+    "asar": true,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "LICENSE",
+      "NOTICE",
+      "apps/electron/**/*",
+      "server/**/*",
+      "web/**/*",
+      "client/**/*",
+      "cli/**/*.mjs",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "node_modules/electron/dist/LICENSE",
+        "to": "licenses/electron/LICENSE"
+      },
+      {
+        "from": "node_modules/electron/dist/LICENSES.chromium.html",
+        "to": "licenses/electron/LICENSES.chromium.html"
+      },
+      {
+        "from": "cli/agentforge",
+        "to": "cli/agentforge"
+      },
+      {
+        "from": "scripts/migrate-data-home.mjs",
+        "to": "scripts/migrate-data-home.mjs"
+      }
+    ],
+    "mac": {
+      "icon": "apps/electron/application.icns",
+      "category": "public.app-category.business",
+      "identity": "-",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ]
+    },
+    "artifactName": "${productName}-${version}-${arch}.${ext}"
+  }
+}

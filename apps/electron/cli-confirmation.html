@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="minimal">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'none'; frame-src 'none'; object-src 'none'; form-action 'none'; base-uri 'none'" />
+  <title>安装 AgentForge CLI</title>
+  <link rel="stylesheet" href="compact.css" />
+  <link rel="stylesheet" href="cli-confirmation.css" />
+  <script src="cli-confirmation.js" defer></script>
+</head>
+<body class="cli-confirmation">
+  <main aria-labelledby="confirmation-title">
+    <header><h1 id="confirmation-title">安装 AgentForge CLI</h1><p>允许在当前用户的 Shell 中使用 <code>agentforge</code>？</p></header>
+    <div class="confirmation-content">
+      <section><h2>受管启动器</h2><p class="confirmation-path" data-command-path></p></section>
+      <section><h2>PATH 配置</h2><p class="confirmation-description">仅添加 AgentForge 标记块，保留原有配置。</p><div data-profile-paths></div></section>
+      <p class="confirmation-note">不使用 sudo，不覆盖其他同名命令，不改变 CLI 登录。安装后请新开终端；移动客户端后需重新安装。</p>
+    </div>
+    <footer><button class="ghost-button" type="button" data-choice="cancel" autofocus>取消</button><button class="primary-button" type="button" data-choice="install">安装 CLI</button></footer>
+  </main>
+</body>
+</html>

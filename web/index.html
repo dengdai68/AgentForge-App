@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#faf9f5" />
+    <title>AgentForge · AI Team OS</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/vendor/highlight.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <img class="application-icon" src="/icons/application.png" alt="" width="28" height="28">
+          <div><strong>AgentForge</strong><small>AI TEAM OS</small></div>
+        </div>
+        <div class="workspace-card" title="单机工作区，暂不支持切换">
+          <div class="workspace-avatar">A</div>
+          <div><small>当前工作区</small><strong>Acme Studio</strong></div>
+          <span class="workspace-tag">LOCAL</span>
+        </div>
+        <nav aria-label="主导航">
+          <div data-navigation-group="operations">
+          <p class="nav-label">OPERATIONS</p>
+          <button class="nav-item" data-view="overview" aria-label="总览"><span class="nav-icon">◈</span><span class="nav-text">总览</span></button>
+          <button class="nav-item active" data-view="tasks" aria-label="任务中心"><span class="nav-icon">✓</span><span class="nav-text">任务中心</span><span class="nav-count" id="nav-task-count">0</span><span class="nav-hint" id="nav-ws-hint" style="display:none">待处理</span></button>
+          <button class="nav-item" data-view="communication" aria-label="沟通"><span class="nav-icon">☏</span><span class="nav-text">沟通</span><span class="nav-count nav-unread" id="nav-communication-count" hidden></span></button>
+          <button class="nav-item" data-view="teams" aria-label="团队"><span class="nav-icon">⌘</span><span class="nav-text">团队</span></button>
+          <button class="nav-item" data-view="workflows" aria-label="工作流"><span class="nav-icon">⌁</span><span class="nav-text">工作流</span></button>
+          </div><div data-navigation-group="build">
+          <p class="nav-label nav-label-spaced">BUILD</p>
+          <button class="nav-item" data-view="agents" aria-label="数字员工"><span class="nav-icon">✦</span><span class="nav-text">数字员工</span></button>
+          <button class="nav-item" data-view="mcp-marketplace" aria-label="MCP 市场"><span class="nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="12" cy="18" r="3"/><path d="M9 6h6M7.5 9l3 6M16.5 9l-3 6"/></svg></span><span class="nav-text">MCP 市场</span></button>
+          <button class="nav-item" data-view="marketplace" aria-label="插件市场"><span class="nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3v5M16 3v5M6 8h12v3a6 6 0 0 1-6 6v4M6 8v3a6 6 0 0 0 6 6"/></svg></span><span class="nav-text">插件市场</span></button>
+          </div><div data-navigation-group="reference">
+          <p class="nav-label nav-label-spaced">REFERENCE</p>
+          <button class="nav-item" data-view="manual" aria-label="开发手册"><span class="nav-icon">◇</span><span class="nav-text">开发手册</span></button>
+          </div>
+        </nav>
+        <div class="sidebar-spacer"></div>
+        <a class="nav-item client-download" href="https://github.com/dengdai68/AgentForge-App/releases/tag/v0.1.1-beta.88" target="_blank" rel="noopener noreferrer" aria-label="下载 Mac 客户端（新窗口）" title="macOS 13+ · Apple Silicon Beta · 未公证；公开源码与安装包"><span class="nav-icon" aria-hidden="true">↓</span><span class="nav-text">下载 Mac 客户端</span></a>
+        <button class="nav-item settings-entry" data-view="settings" aria-label="设置" title="设置"><span class="nav-icon">⚙</span><span class="nav-text">设置</span></button>
+        <div class="user-card">
+          <div class="user-avatar">DD</div>
+          <div><strong id="account-name">管理员</strong><small>本机单用户</small></div>
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <header class="topbar">
+          <div class="breadcrumb"><span>WORKSPACE</span><b>/</b><strong id="breadcrumb-current">任务中心</strong></div>
+          <div class="topbar-actions">
+            <div class="live-indicator" id="live-indicator" title="SSE 实时事件流"><span></span>实时同步</div>
+            <button class="icon-button" id="notify-button" title="通知（即将支持）">♢<i></i></button>
+          </div>
+        </header>
+
+        <section class="view" id="communication-view"><div id="communication-root"></div></section>
+        <!-- 总览 -->
+        <section class="view" id="overview-view">
+          <div class="hero-row">
+            <div>
+              <div class="eyebrow" id="hero-date">·</div>
+              <h1>让一支 AI 团队<br /><em>开始工作。</em></h1>
+              <p class="hero-copy">从一个目标开始。AgentForge 会帮你组织角色、拆分任务，<br />让每个 Agent 在同一个上下文里交付可验证的结果。</p>
+              <div class="hero-actions">
+                <button class="primary-button" data-goto="tasks">启动一个任务 <span>↗</span></button>
+                <button class="ghost-button" data-goto="teams">查看团队 <span>→</span></button>
+              </div>
+            </div>
+            <div class="hero-orbit" aria-hidden="true">
+              <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="orbit-core"><span>AF</span></div>
+              <div class="orbit-node node-one">✦<small>PLAN</small></div><div class="orbit-node node-two">⌘<small>TEAM</small></div><div class="orbit-node node-three">✓<small>SHIP</small></div>
+            </div>
+          </div>
+          <div class="stats-grid" id="stats-grid"></div>
+          <div class="content-grid top-grid">
+            <section class="panel" id="active-run-panel"></section>
+            <section class="panel" id="activity-panel"></section>
+          </div>
+          <div class="content-grid bottom-grid">
+            <section class="panel" id="team-panel"></section>
+            <section class="panel" id="task-panel"></section>
+          </div>
+        </section>
+
+        <!-- 任务中心 -->
+        <section class="view active" id="tasks-view">
+          <div class="sr-only" id="tasks-heading"></div>
+          <div class="filter-bar" id="task-filter-bar"></div>
+          <div class="panel full-panel"><div class="table-wrap" id="tasks-table"></div></div>
+        </section>
+
+        <!-- 团队 -->
+        <section class="view" id="teams-view">
+          <div class="page-heading">
+            <div><h2>团队工作台</h2><p>组合业务数字员工，选择项目经理；本机用户作为需求方与最终决策人共同参与。</p></div>
+          </div>
+          <div class="directory-toolbar"><input id="teams-search" type="search" aria-label="搜索团队" placeholder="搜索"><button class="primary-button" data-action="new-team">＋ 创建团队</button></div>
+          <div class="team-cards" id="teams-grid"></div>
+        </section>
+
+        <!-- 工作流 -->
+        <section class="view" id="workflows-view">
+          <div class="page-heading">
+            <div><h2>工作流管理</h2><p>定义任务如何协作：节点、依赖与人员需求提示。项目经理依据这些护栏推进，不被固定顺序替代。</p></div>
+          </div>
+          <div class="directory-toolbar"><input id="workflows-search" type="search" aria-label="搜索工作流" placeholder="搜索"><button class="primary-button" data-action="new-workflow">＋ 新建工作流</button></div>
+          <div class="workflow-grid" id="workflows-grid"></div>
+        </section>
+
+        <!-- 数字员工 -->
+        <section class="view" id="agents-view">
+          <div class="page-heading">
+            <div><h2>数字员工</h2><p>配置成员职责、能力与本机运行时；团队项目经理负责推进工作流，业务结果由对应节点负责，最终完成由人类确认。</p></div>
+          </div>
+          <div class="directory-toolbar"><input id="agents-search" type="search" aria-label="搜索数字员工" placeholder="搜索"><button class="primary-button" data-action="new-agent">＋ 创建数字员工</button></div>
+          <div class="agent-grid" id="agents-grid"></div>
+        </section>
+
+        <section class="view" id="settings-view">
+          <div class="page-heading"><div><h2>设置</h2><p>管理外观、侧栏展示、仓库访问与本机运行信息。</p></div></div>
+          <div id="settings-root"></div>
+        </section>
+
+        <section class="view" id="mcp-marketplace-view"><div id="mcp-marketplace-root"></div></section>
+        <section class="view" id="marketplace-view"><div id="marketplace-root"></div></section>
+
+        <!-- 开发手册（通过 /manual/* 路由访问） -->
+        <section class="view" id="manual-view">
+          <div class="page-heading manual-heading">
+            <div><h2>开发手册</h2><p>把当前已实现的领域模型、模块边界与任务驱动逻辑画成可检查的系统图。</p></div>
+            <span class="manual-source-note">来源：Store · Orchestrator · Run Files</span>
+          </div>
+          <div id="manual-content"></div>
+        </section>
+
+        <!-- 任务空间（从任务中心进入，无独立导航入口） -->
+        <section class="view" id="workspace-view">
+          <div class="panel" style="padding:0" id="run-workspace"></div>
+        </section>
+      </main>
+    </div>
+
+    <div class="toast" id="toast" role="status"></div>
+    <div class="modal-backdrop" id="modal-backdrop" aria-hidden="true">
+      <div class="modal" role="dialog" aria-modal="true">
+        <button class="modal-close" id="modal-close" title="关闭（Esc）">×</button>
+        <div id="modal-content"></div>
+      </div>
+    </div>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

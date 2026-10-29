@@ -1,0 +1,4 @@
+#!/bin/sh
+set -eu
+
+node "$(dirname "$0")/../scripts/check-commit-message.mjs" "$1"

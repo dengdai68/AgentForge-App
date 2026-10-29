@@ -1,0 +1,4 @@
+#!/bin/sh
+# Installed inside AgentForge.app/Contents/Resources/cli. No global Node/PATH edit.
+cli_directory=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd) || exit 5
+ELECTRON_RUN_AS_NODE=1 exec "$cli_directory/../../MacOS/AgentForge" "$cli_directory/../app.asar/cli/main.mjs" "$@"
