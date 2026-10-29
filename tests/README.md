@@ -18,6 +18,8 @@ native-skills.test.mjs 使用明确的 stdio 协议夹具检查额外根、线�
 
 prompts.test.mjs 覆盖系统/当前输入分层、经理独占工作流、消息确认游标、真实 CLI 参数和续接环境更新；既有协调夹具显式读取系统文件并选择员工，不依赖旧节点映射。真实模型验收另见 scripts/test-prompt-e2e.mjs。
 
+roles.test.mjs 覆盖角色 CRUD 校验与审计事件、员工 roleId 绑定/解绑/非法拒绝、删除引用拒绝（含停用员工）、Task/Run 快照冻结角色文本与删除后可核验、沟通投递快照发送时嵌入与显式重试刷新、角色提示词只进系统指令不进当前输入、旧 role 字段不复活，以及 roles CLI 渐进帮助/schema 和认证 CRUD 请求形态。
+
 沟通工作台新增附件归属/同名/空文件/二进制/完整性/链接/超限、发送幂等与上传失败保留、仅真实未读提示及控制台按调用分页的回归。真实 Provider 不作为单测夹具：由 scripts/test-communication-workbench.mjs 显式执行随机文件读取验收，安装包再验证相同 UI/API。
 
 CLI 资源单测使用真实权限受限的连接文件和明确的 health 夹具，失效/不安全/实例失配时不得发送凭据或回退 Web。配置/任务 CLI 真实 E2E 在独立 Electron 随机端口执行，保持 Web 4310 不受影响；新 Task UUID 的跨进程回归固定时间戳验证共享工作根不碰撞。fixture home 和已保存的隔离任务目录防止写入操作者目录。

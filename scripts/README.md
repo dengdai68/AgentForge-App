@@ -2,6 +2,8 @@
 
 客户端专用验收：源码/安装包均操作 Electron，自有服务随机端口。test-prompt-e2e 验证真实任务和历史；test-communication-workbench 验证沟通；已移除固定端口 Web 设置/历史脚本和独立浏览器分支。
 
+test-roles-ui.mjs 在隔离 Electron 验收角色目录：导航入口、创建/编辑、搜索、每页20条分页、员工单选绑定/清空、绑定角色删除拒绝就地列出员工及窄窗口工具栏；不调用模型。AGENTFORGE_ROLES_REAL=1 node scripts/test-roles-real.mjs 以真实 Claude Code/Codex 验证角色提示词进入沟通与任务的应用系统/developer 指令并生效（随机探针前缀），对照未绑定员工与经理不受污染，覆盖解绑/编辑后的后续投递与任务冻结原文；只使用已有 CLI 登录，证据写 .data/roles-real-*。
+
 独立客户端源码 UI 验收按真实目录树逐级展开 docs/notes 后读取夹具，不假设工作目录仍有 docs 特殊默认展开。所有验收与构建都从 AgentForge-App 自身依赖运行，不连接原仓库服务。
 
 AGENTFORGE_WORKSPACE_REAL=1 node scripts/test-workspace-files.mjs：隔离真实Claude代码开发/独立测试，全部通过CLI配置团队、员工、工作流与任务，非docs产物和真实样例MP4。AGENTFORGE_WORKSPACE_APP指定打包app，AGENTFORGE_WORKSPACE_CLAUDE指定实际CLI；同一隔离服务操作Electron的宽窄目录/CHANGE、1005项翻页、大文件下载与人类确认。不修改操作者任务或凭据，合成大小/分页数据明确为UI夹具。

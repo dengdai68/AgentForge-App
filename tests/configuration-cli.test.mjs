@@ -206,7 +206,7 @@ test('default CLI help progressively discloses root, groups and operation detail
   }
   const employee = await captured(['agents', 'create', '--help'], { columns: 160 });
   assert.match(employee.stdout, /runtime.extensionSelection.pluginIds/); assert.match(employee.stdout, /父项提供时必填/);
-  assert.match(employee.stdout, /完整替换/); assert.ok(!employee.stdout.includes('--username') && !employee.stdout.includes('role'));
+  assert.match(employee.stdout, /完整替换/); assert.ok(!employee.stdout.includes('--username')); assert.match(employee.stdout, /roleId/); assert.ok(!/^ {2}role {2}/m.test(employee.stdout), 'the retired role label stays absent; only roleId references a shared role');
   assert.match((await captured(['workflows', 'create', '--help'])).stdout, /staffingGuidance/);
   for (const operation of ['list', 'get', 'delete']) {
     const text = (await captured(['agents', operation, '--help'])).stdout;
@@ -345,7 +345,7 @@ test('text failures go only to stderr with exit code and recovery; no raw errors
 test('AI CLI provides offline comprehensive group/command schemas and safe examples', async () => {
   const failFetch = () => { throw new Error('help must be offline'); };
   const help = await execute(['help'], { fetcher: failFetch });
-  assert.equal(Object.keys(help.resources).length, 7); assert.match(help.sequence.join(' '), /runtimes.*plugins.*mcps.*agents.*teams.*workflows/);
+  assert.equal(Object.keys(help.resources).length, 8); assert.match(help.sequence.join(' '), /runtimes.*plugins.*mcps.*roles.*agents.*teams.*workflows/);
   for (const group of Object.keys(resources)) {
     const schema = await execute(['schema', group], { fetcher: failFetch });
     assert.equal(schema.schema.additionalProperties, false); assert.ok(schema.notes.length);

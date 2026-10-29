@@ -13,7 +13,10 @@ const handoffRules = '仅需要其他候选成员回答时填写 handoffToAgentI
 const chatOutput = '只输出 JSON 对象；reply 是唯一必填字段，例如 {"reply":"完整回复"}。handoffToAgentId 是可选的转交字段，不需要转交时不必输出。';
 
 function persona(agent) {
-  return [`你是「${agent.name}」。`, `角色工作法：${agent.systemPrompt || agent.description || "根据本次输入完成职责。"}`, agent.description && `说明：${agent.description}`, agent.capabilities?.length && `成员能力：${JSON.stringify(agent.capabilities)}`].filter(Boolean).join("\n");
+  // The bound role arrives as data on the (frozen or refreshed) agent snapshot;
+  // this module never resolves it. Role text joins the application system
+  // instructions alongside the employee's own working rules — never the input.
+  return [`你是「${agent.name}」。`, `角色工作法：${agent.systemPrompt || agent.description || "根据本次输入完成职责。"}`, agent.roleSnapshot?.prompt && `绑定角色「${agent.roleSnapshot.name}」的共用系统提示词：${agent.roleSnapshot.prompt}`, agent.description && `说明：${agent.description}`, agent.capabilities?.length && `成员能力：${JSON.stringify(agent.capabilities)}`].filter(Boolean).join("\n");
 }
 
 export function taskPrompt({ task, run, node, trace, agent, directory, cwd, workspace, messages, roster, mode, delivery, session }) {

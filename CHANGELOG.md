@@ -3,6 +3,10 @@
 ## [Unreleased]
 
 - 本机开发固定使用 `main`，不主动创建或切换功能分支。
+- 新增「角色」管理：只有名称和纯文本提示词的共用系统提示词，BUILD 导航独立入口，卡片列表沿用搜索与每页 20 条分页；员工创建/编辑可选绑定一个角色或清空（`roleId`），不是员工类型、派工或权限概念。
+- 绑定后角色提示词在沟通与任务执行两种场景都并入实际传给 Runtime 的应用系统/developer 指令（prompts.mjs 组装层，Claude Code 与 Codex 通道不变），不进入每轮用户消息；未绑定员工行为不变。
+- Task 创建把角色 ID 与提示词文本冻结进员工/经理快照（`roleSnapshot`），沟通投递快照在发送/显式重试时嵌入当时文本；角色编辑只影响之后创建的任务与后续投递，不重建原生会话，冻结历史可核验。仍有员工（含停用）绑定时拒绝删除并列出员工。
+- CLI 新增 `roles` 命令组（list/get/create/update/delete，渐进 help/schema，delete 需 `--yes`），`agents` schema/example/notes 增加 `roleId`；认证 HTTP 增加 `/api/roles` CRUD 并在 bootstrap 返回角色摘要。
 
 ## [0.1.1-beta.89] - 2026-10-29
 
