@@ -109,15 +109,15 @@ function acceptedWorkspaceBaseline(initial, artifacts) {
 
 function managerDispatch(store, runId, dedupeKey, messageIds = []) {
   const run = store.getRun(runId), task = store.getRunTask(runId);
-  return store.enqueueDispatch(runId, { recipientAgentId: run.manager.id, workflowNodeId: task.workflowSnapshot.nodes[0].id, purpose: "manager", dedupeKey, messageIds });
+  return store.enqueueDispatch(runId, { recipientAgentId: run.manager.id, workflowNodeId: task.workflowSnapshot.nodes[0].id, purpose: "manager", dedupeKey, messageIds, coordinationFollowup: true, deferredRevisit: dedupeKey.startsWith("redispatch:") });
 }
 
-// Queue ordering for concurrent coordination messages. A redispatch is the
-// deferred-decision re-evaluation itself: it must never block the handoff it
-// exists to revisit, or the deferral would be self-sustaining.
+// Queue ordering for concurrent coordination messages. A deferred revisit is
+// the redispatch that exists to re-evaluate a deferred decision: it must never
+// block the handoff it revisits, or the deferral would be self-sustaining.
 export function dispatchBlocksHandoff(item, now = Date.now()) {
   if (["done", "cancelled"].includes(item.status)) return false;
-  if (typeof item.dedupeKey === "string" && item.dedupeKey.startsWith("redispatch:")) return false;
+  if (item.deferredRevisit) return false;
   return !(item.status === "queued" && item.lastError && item.nextRetryAt && Date.parse(item.nextRetryAt) > now);
 }
 

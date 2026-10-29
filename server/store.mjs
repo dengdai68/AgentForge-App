@@ -477,7 +477,7 @@ export function createStore({ databasePath = process.env.AGENTFORGE_DB_PATH || "
       if (existing) return clone(existing);
       const messageIds = [...new Set(input.messageIds || [])];
       if (messageIds.some((value) => find(state.messages, value)?.runId !== runId)) throw new Error("投递消息不属于 Run");
-      const item = { id: id("dispatch"), runId, recipientAgentId: input.recipientAgentId, workflowNodeId: input.workflowNodeId, purpose: input.purpose, interactionOnly, messageIds, parentDispatchId: input.parentDispatchId || null, waitingMessageId: null, status: "queued", attempts: 0, nextRetryAt: null, traceIds: [], dedupeKey: input.dedupeKey || null, createdAt: now(), updatedAt: now() };
+      const item = { id: id("dispatch"), runId, recipientAgentId: input.recipientAgentId, workflowNodeId: input.workflowNodeId, purpose: input.purpose, interactionOnly, messageIds, parentDispatchId: input.parentDispatchId || null, waitingMessageId: null, status: "queued", attempts: 0, nextRetryAt: null, traceIds: [], dedupeKey: input.dedupeKey || null, ...(input.coordinationFollowup ? { coordinationFollowup: true } : {}), ...(input.deferredRevisit ? { deferredRevisit: true } : {}), createdAt: now(), updatedAt: now() };
       state.dispatches.push(item); save(); return clone(item);
     },
     hasPendingHumanQuestion(runId) { return this.pendingQuestions(runId).some((item) => item.recipient.type === "human"); },
@@ -639,6 +639,7 @@ export function createStore({ databasePath = process.env.AGENTFORGE_DB_PATH || "
       return this.transaction(() => {
         const current = getRun(runId), task = getTask(current?.taskId);
         if (!current || task.archivedAt || current.status !== "awaiting_acceptance") throw new Error("请在人类验收阶段确认完成");
+        this.settleCoordinationFollowups(runId);
         current.status = "completed"; current.completedAt = now(); current.confirmedAt = current.completedAt; current.confirmedBy = humanMember.id;
         current.summary = "人类已验收并确认任务完成。";
         current.currentFocus = null;
@@ -651,8 +652,20 @@ export function createStore({ databasePath = process.env.AGENTFORGE_DB_PATH || "
       current.deliveryReview = { ...clone(input), traceId };
       save(); return clone(current.deliveryReview);
     },
+    // Platform-created coordination follow-ups (deferred-decision revisits,
+    // format corrections, delivery notices) exist only to continue coordination.
+    // A concluded Run makes them unclaimable forever, so the terminal decision
+    // legitimately cancels them with an audit record — never silently.
+    settleCoordinationFollowups(runId) {
+      const pending = state.dispatches.filter((item) => item.runId === runId && item.coordinationFollowup && !["done", "cancelled"].includes(item.status));
+      if (!pending.length) return [];
+      for (const item of pending) { item.status = "cancelled"; item.nextRetryAt = null; item.updatedAt = now(); }
+      addEvent({ type: "dispatch.coordination_followups_settled", runId, message: "终止安排或人类确认已取代未执行的平台协调复核投递；这些投递已取消并保留记录。", data: { dispatchIds: pending.map((item) => item.id) } });
+      save(); return pending.map((item) => item.id);
+    },
     requestHumanAcceptance(runId, { traceId = null, summary = "项目经理已提交人类验收。" } = {}) {
       const current = getRun(runId), task = getTask(current.taskId);
+      this.settleCoordinationFollowups(runId);
       current.acceptanceRequest = { traceId, summary, requestedAt: now(), managerAgentId: current.manager.id };
       current.status = "awaiting_acceptance"; current.summary = summary;
       task.status = "awaiting_acceptance"; task.updatedAt = now();

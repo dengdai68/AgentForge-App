@@ -9,6 +9,7 @@
 - CLI 新增 `roles` 命令组（list/get/create/update/delete，渐进 help/schema，delete 需 `--yes`，list `--search` 与界面一致含提示词匹配），`agents` schema/example/notes 增加 `roleId`；认证 HTTP 增加 `/api/roles` CRUD 并在 bootstrap 返回角色摘要。
 - 沟通回复线上 schema 把可空 `handoffToAgentId` 与 `reply` 同列 required，修复 Codex 严格 structured output 的 400 拒绝；null（及 Store 兼容的省略）仍表示不转交，领域语义与校验不变。
 - 修复经理非终止安排被在途投递顺延后静默丢失的协调停滞：记录顺延说明并向经理入队一次复核投递，复核投递自身不阻塞后续交接。
+- 修复已完成 Run 残留不可领取的平台协调复核投递导致归档被拒：顺延复核、格式纠错等协调跟进投递打标 `coordinationFollowup`，Run 进入验收或确认完成时由 Store 取消并记录 `dispatch.coordination_followups_settled`，记录保留可审计；业务投递完成门禁不变。
 - 角色卡片补头像列与角色 ID（标题不再挤入窄列），员工角色选择器同名选项以 ID 区分。
 
 ## [0.1.1-beta.89] - 2026-10-29

@@ -387,6 +387,34 @@ test("a deferred manager decision materializes after pending work drains instead
   store.close();
 });
 
+test("a concluded run settles pending coordination follow-ups so completion and archival stay possible", () => {
+  // QA-06 shape: two manager dispatches interleave — one decision defers
+  // (redispatch queued), the other concludes acceptance. The pending
+  // redispatch must not become a permanent unclaimable blocker.
+  const store = createFixtureStore();
+  const run = store.createRun(store.listTasks()[0].id);
+  store.updateRun(run.id, { status: "running" }); store.setTaskStatus(run.taskId, "running");
+  const a = store.enqueueDispatch(run.id, { recipientAgentId: run.manager.id, workflowNodeId: "requirements", purpose: "manager", dedupeKey: "decision-a" });
+  store.claimDispatch(run.id); store.completeDispatch(a.id);
+  const b = store.enqueueDispatch(run.id, { recipientAgentId: run.manager.id, workflowNodeId: "requirements", purpose: "manager", dedupeKey: "decision-b" });
+  const deferred = scheduleManagerFollowup(store, run.id, a, { nextNodeId: "requirements", nextAgentId: "agent_analyst", rationale: "先处理排队消息" });
+  assert.equal(deferred.requeued, true);
+  const redispatch = store.listDispatches(run.id).find((item) => item.dedupeKey === "redispatch:" + a.id);
+  assert.equal(redispatch.coordinationFollowup, true);
+  assert.equal(redispatch.deferredRevisit, true);
+  assert.equal(store.claimDispatch(run.id).id, b.id); store.completeDispatch(b.id);
+  assert.equal(scheduleManagerFollowup(store, run.id, b, { nextNodeId: null, rationale: "经理提交验收" }).scheduled, "acceptance");
+  assert.equal(store.getDispatch(redispatch.id).status, "cancelled", "acceptance settles the superseded deferred revisit");
+  const settled = store.getRunWorkspace(run.id).events.find((item) => item.type === "dispatch.coordination_followups_settled");
+  assert.deepEqual(settled?.data.dispatchIds, [redispatch.id]);
+  store.confirmRunCompletion(run.id);
+  assert.equal(store.canCompleteRun(run.id), true);
+  store.archiveTask(run.taskId);
+  assert.equal(store.getTask(run.taskId).archivedAt !== null, true);
+  assert.equal(store.getDispatch(redispatch.id).status, "cancelled", "the settled record is preserved, not deleted");
+  store.close();
+});
+
 // R11② (brief v6 §4.6 P3, human ruling message_mvj00z8c_1se): the terminal
 // delivery_review may only be scheduled once every dispatch is done or
 // cancelled. With any unfinished dispatch — including one in retry backoff —

@@ -763,7 +763,7 @@
     {
       "id": "server.orchestrator",
       "instructionDependency": "server/prompts.mjs pure Task composition.",
-      "promptContract": "Manager-only workflow system instructions; environment and compact consultation roster in system layer. Explicit nextAgentId controls dispatch; Store supplies unacknowledged cross-member inputs/context deltas; model content or success acknowledges input. Transient failures have three attempts; deterministic/unknown failures stop. A non-terminal decision deferred by pending work is recorded and revisited through a queued manager redispatch that never blocks handoffs itself — deferred decisions are never silently dropped.",
+      "promptContract": "Manager-only workflow system instructions; environment and compact consultation roster in system layer. Explicit nextAgentId controls dispatch; Store supplies unacknowledged cross-member inputs/context deltas; model content or success acknowledges input. Transient failures have three attempts; deterministic/unknown failures stop. A non-terminal decision deferred by pending work is recorded and revisited through a queued manager redispatch that never blocks handoffs itself — deferred decisions are never silently dropped. Platform coordination follow-ups carry coordinationFollowup and are settled (cancelled with an audit record) when the run reaches acceptance or human completion, so concluded runs never retain unclaimable coordination dispatches.",
       "path": "server/orchestrator.mjs",
       "kind": "runtime",
       "owner": "orchestration",

@@ -53,7 +53,7 @@ Task 创建时冻结团队、员工、工作流及仓库配置，角色提示词
 
 原生会话拥有其对话历史，平台不重放聊天记录。成员会话记录已投递的平台消息游标和上下文内容摘要：跨员工交接、广播和人类回复仍须首次送达。模型本轮产生实际正文/思考/工具内容或成功返回结果后确认；启动失败、快照或连接事件不确认。确认后即使执行失败也不重投；关联目标 ID 不绕过游标。会话不存在时清空上下文摘要并记录重建事实，不伪称原生历史仍在；可通过真实历史工具按需查询。
 
-不可自动重试的 Runtime 失败或三次临时失败耗尽时，Store 将原 Dispatch 置为 cancelled、保留原始脱敏错误和所有 Trace，记录 dispatch.retry_stopped；活跃业务 Run 失败、Task blocked，等待人类恢复。独立答疑失败只停止该投递，不改变已完成任务。现有手动恢复入口继续由经理基于保留事实重新评估，不自动换人或重派业务。
+不可自动重试的 Runtime 失败或三次临时失败耗尽时，Store 将原 Dispatch 置为 cancelled、保留原始脱敏错误和所有 Trace，记录 dispatch.retry_stopped；活跃业务 Run 失败、Task blocked，等待人类恢复。独立答疑失败只停止该投递，不改变已完成任务。现有手动恢复入口继续由经理基于保留事实重新评估，不自动换人或重派业务。平台自建的管理协调跟进投递（顺延复核、格式纠错、交付通知，标记 coordinationFollowup）在 Run 进入验收或确认完成时被取消并记录 `dispatch.coordination_followups_settled`，不作为未结束协作残留；业务投递的完成门禁不变。
 
 每位成员独立会话，后续 Trace 可续接已绑定的原生 Claude Code/Codex ID。Codex 创建阶段的内部占位 UUID 不写入 Trace.providerSessionId，原生 thread.started 确认后才绑定。沟通员工资料和插件/MCP 选择变化不改变会话身份；下次调用重新应用指令与所选扩展。实际 Runtime 连接或启动目录变化才重建，历史记录与已确认消息游标保留。
 
