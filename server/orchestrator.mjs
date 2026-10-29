@@ -112,9 +112,12 @@ function managerDispatch(store, runId, dedupeKey, messageIds = []) {
   return store.enqueueDispatch(runId, { recipientAgentId: run.manager.id, workflowNodeId: task.workflowSnapshot.nodes[0].id, purpose: "manager", dedupeKey, messageIds });
 }
 
-// Queue ordering for concurrent coordination messages.
+// Queue ordering for concurrent coordination messages. A redispatch is the
+// deferred-decision re-evaluation itself: it must never block the handoff it
+// exists to revisit, or the deferral would be self-sustaining.
 export function dispatchBlocksHandoff(item, now = Date.now()) {
   if (["done", "cancelled"].includes(item.status)) return false;
+  if (typeof item.dedupeKey === "string" && item.dedupeKey.startsWith("redispatch:")) return false;
   return !(item.status === "queued" && item.lastError && item.nextRetryAt && Date.parse(item.nextRetryAt) > now);
 }
 
@@ -130,7 +133,13 @@ export function scheduleManagerFollowup(store, runId, delivery, decision) {
   if (next !== null) {
     // Non-terminal handoff: real pending work keeps priority; a failed
     // dispatch in retry backoff never blocks it.
-    if (store.listDispatches(runId).some((item) => dispatchBlocksHandoff(item))) return { scheduled: "blocked" };
+    if (store.listDispatches(runId).some((item) => dispatchBlocksHandoff(item))) {
+      // A deferred decision must never be dropped silently: record the fact
+      // and queue a manager re-evaluation behind the pending work.
+      const note = store.addMessage({ runId, traceId: delivery.traceIds?.at(-1) || null, sender: { type: "system", id: "agentforge", name: "AgentForge" }, recipientAgentId: run.manager.id, kind: "coordination_notice", content: `上一项安排（节点 ${decision.nextNodeId} → 成员 ${decision.nextAgentId}）因当时仍有未结束投递而暂未建立派工；请在当前队列清空后基于最新状态重新决定下一步，不要假设该安排已执行。` });
+      managerDispatch(store, runId, "redispatch:" + delivery.id, [note.id]);
+      return { scheduled: "blocked", requeued: true };
+    }
     const recipientId = decision.nextAgentId;
     store.setCurrentFocus(runId, next, decision.rationale || "项目经理安排下一次协作");
     store.enqueueDispatch(runId, { recipientAgentId: recipientId, workflowNodeId: next, purpose: "node", dedupeKey: "handoff:" + delivery.id });

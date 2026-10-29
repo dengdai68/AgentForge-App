@@ -197,6 +197,8 @@ test('role CLI runs authenticated CRUD over HTTP with reference-style output', a
   const list = await invoke(['roles', 'list']);
   assert.equal(list.items[0].id, 'role_one');
   assert.deepEqual(calls.at(-1), { path: '/api/roles', method: 'GET', body: null });
+  assert.equal((await invoke(['roles', 'list', '--search', 'ROLE_ONE'])).items.length, 1, 'search matches the prompt text like the UI');
+  assert.deepEqual((await invoke(['roles', 'list', '--search', '没有匹配'])).items, []);
   assert.equal((await invoke(['roles', 'get', 'role_one'])).prompt, 'ROLE_ONE');
   await invoke(['roles', 'create', '--file', '-'], { name: '审校', prompt: 'ROLE_TWO' });
   assert.deepEqual(calls.at(-1), { path: '/api/roles', method: 'POST', body: { name: '审校', prompt: 'ROLE_TWO' } });

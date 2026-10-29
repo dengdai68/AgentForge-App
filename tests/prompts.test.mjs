@@ -55,9 +55,9 @@ test('communication separates persona/mode/environment from the one target messa
   assert.doesNotMatch(result.systemPrompt, /USER_ORIGINAL/);
   assert.doesNotMatch(result.prompt, /PERSONA_RULE|\/chat|只输出|人类沟通中回答/);
   assert.match(result.systemPrompt, /本轮可转交成员：\[\]/);
-  assert.match(result.systemPrompt, /reply 是唯一必填字段/);
-  assert.match(result.systemPrompt, /不转交时省略 handoffToAgentId/);
-  assert.doesNotMatch(result.systemPrompt, /handoffToAgentId 必须为 null/);
+  assert.match(result.systemPrompt, /handoffToAgentId 是转交字段，不需要转交时输出 null/);
+  assert.match(result.systemPrompt, /不转交时 handoffToAgentId 填 null/);
+  assert.doesNotMatch(result.systemPrompt, /省略 handoffToAgentId/);
   assert.doesNotMatch(result.prompt, /本轮可转交成员/);
   assert.equal(result.prompt.match(/USER_ORIGINAL/g).length, 1);
 });

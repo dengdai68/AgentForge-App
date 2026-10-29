@@ -95,7 +95,7 @@
       "pluginUpdates": "plugins updates/check-updates/auto-update expose the shared service scheduler, progressive typed settings and reference-only update receipts; no direct Git or Provider access.",
       "mcpEditing": "mcps update ID sends authenticated partial PUT, preserves unchanged redacted fields, returns new/previous IDs and employee references; frozen work remains unchanged.",
       "promptContract": "Employee systemPrompt help/schema explains native application system/developer instructions; configuration and Task commands/fields/auth remain unchanged.",
-      "roleContract": "The roles group offers list/get/create/update/delete with progressive help/schema and --yes deletion; agents schema/example/notes document roleId (at most one role, explicit null unbinds). Output references roles by ID/name without dumping bound prompt text into other resources.",
+      "roleContract": "The roles group offers list/get/create/update/delete with progressive help/schema and --yes deletion; list --search matches name and prompt like the UI; agents schema/example/notes document roleId (at most one role, explicit null unbinds). Output references roles by ID/name without dumping bound prompt text into other resources.",
       "recordPresentation": "Task collaboration text/JSON excludes client-only tone/statusCode metadata; progressive command and status contracts remain unchanged.",
       "path": "cli/",
       "kind": "authenticated-client",
@@ -409,7 +409,7 @@
     },
     {
       "id": "server.communication",
-      "replyContract": "Only reply is required; omitted/null handoffToAgentId means no handoff. Supplied targets retain Store validation; unknown fields and empty replies are rejected. Task coordination and CLI contracts are unchanged.",
+      "replyContract": "The wire schema lists both reply and the nullable handoffToAgentId in required because strict Providers (Codex response_format) reject partial required coverage; null — and, tolerated by the Store, an omitted key — means no handoff. Supplied targets retain Store validation; unknown fields and empty replies are rejected. Task coordination and CLI contracts are unchanged.",
       "instructionDependency": "server/prompts.mjs pure communication composition.",
       "promptContract": "Pure separated system/current composition, environment and eligible peers in system instructions, exact target once, no recent transcript replay; final prepared prompt snapshot remains private.",
       "workbenchContract": "Visible-message attachment paths and conversation root enter the bounded prompt without file bytes. Public runtime content and promptSnapshot persist through Run Files; audit stores references, not session transport or raw bodies.",
@@ -763,7 +763,7 @@
     {
       "id": "server.orchestrator",
       "instructionDependency": "server/prompts.mjs pure Task composition.",
-      "promptContract": "Manager-only workflow system instructions; environment and compact consultation roster in system layer. Explicit nextAgentId controls dispatch; Store supplies unacknowledged cross-member inputs/context deltas; model content or success acknowledges input. Transient failures have three attempts; deterministic/unknown failures stop.",
+      "promptContract": "Manager-only workflow system instructions; environment and compact consultation roster in system layer. Explicit nextAgentId controls dispatch; Store supplies unacknowledged cross-member inputs/context deltas; model content or success acknowledges input. Transient failures have three attempts; deterministic/unknown failures stop. A non-terminal decision deferred by pending work is recorded and revisited through a queued manager redispatch that never blocks handoffs itself — deferred decisions are never silently dropped.",
       "path": "server/orchestrator.mjs",
       "kind": "runtime",
       "owner": "orchestration",
@@ -906,7 +906,7 @@
       },
       "extensionPresentation": "Employee/plugin/MCP cards with same-row search and create/install actions; source-wide plugin installation, lazy component/redacted JSON details with confirmed deletion, and searchable multi-select employee chips. Cards/details/pickers label Claude/Codex support, component applicability and exact incompatibility reasons; Runtime switching preserves but rejects incompatible choices. Empty/loading/no-match/error states occupy a separate full-width region outside the card grid. Human collaboration and communication messages align right based on sender identity only; employees stay left without changing shared projection/CLI fields. Compatibility is static, not a claim of executed account/dependency validation. Removal rules and immutable history belong to Store. Plugin details use one bounded body scroller with sticky component tabs and fixed title/actions, including long overviews; employee/plugin/MCP cards reserve stable heading/description geometry with complete fields available in details/edit. Employee plugin/MCP pickers dismiss on mouse leave, form-outside pointerdown or focus leaving the combo; repeated input clicks reopen, keyboard and candidate traversal remain available, hidden option focus returns to input. Listeners belong to the form, not global per-open document handlers; HTTP/CLI/loading contracts are unchanged.",
       "cliPresentation": "CLI category always belongs to the client; unavailable host methods report a client error rather than selecting a browser product mode. Task workspace text does not select a Web/Desktop target.",
-      "rolePresentation": "The BUILD group has a standalone Roles directory with the shared search toolbar, 20-per-page pagination and employee-card styling; role create/edit uses name plus plain-text prompt only, deletion shows reference errors in place, and the employee form offers an optional single role select including unbound."
+      "rolePresentation": "The BUILD group has a standalone Roles directory with the shared search toolbar, 20-per-page pagination and employee-card styling; role create/edit uses name plus plain-text prompt only, deletion shows reference errors in place, and the employee form offers an optional single role select including unbound. Cards use the avatar column so titles keep full width and show the role ID; same-name roles are distinguished by ID in the employee selector."
     },
     {
       "id": "web.manual-graphs",

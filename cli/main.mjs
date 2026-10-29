@@ -90,7 +90,7 @@ async function executeParsed({ args, flags }, { stdin = process.stdin, stderr = 
   };
   if (operation === 'list') {
     const result = await readList();
-    const items = result[resource.key].filter(item => !flags.search || `${item.name || ''} ${item.description || ''} ${item.mission || ''}`.toLocaleLowerCase().includes(flags.search.toLocaleLowerCase()));
+    const items = result[resource.key].filter(item => !flags.search || `${item.name || ''} ${item.description || ''} ${item.mission || ''} ${item.prompt || ''}`.toLocaleLowerCase().includes(flags.search.toLocaleLowerCase()));
     const selected = flags.all ? items : items.slice((page - 1) * 20, page * 20);
     return { items: selected, total: items.length, page: flags.all ? null : page, pageSize: flags.all ? null : 20, hasMore: !flags.all && page * 20 < items.length };
   }

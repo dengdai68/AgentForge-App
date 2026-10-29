@@ -1,6 +1,6 @@
 # 控制面
 
-沟通输出 schema 仅要求 reply，handoffToAgentId 选填；省略/null 都不转交，实际目标继续由 Store 校验。提示词与 schema 同步，不修改 Task 协议或 CLI 能力。
+沟通输出 schema 的 required 含 reply 与可空 handoffToAgentId 两键（严格 Provider 校验要求）；null 或省略均不转交，实际目标继续由 Store 校验。提示词与 schema 同步，不修改 Task 协议或 CLI 能力。
 
 工作目录直接读取真实根，不再生成/读取展示清单，不预建 docs。目录查询按层/200项分页，普通根文件、业务自定义目录与大媒体可见；认证读取/下载仅保留工作根、敏感文件与链接检查。Git比较工作根初始化提交并保留绑定repos原始gitlink。Orchestrator记录各业务路径有限快照，Store工作流位置仅作建议、缺省空，不改写历史路径。
 

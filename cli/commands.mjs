@@ -97,7 +97,7 @@ export const guide = {
     ['--file PATH | -', 'create/update/import 的 JSON 对象文件；- 表示从 stdin 读取，最多 1MiB。帮助中的模板需替换占位 ID；不要提交含凭据的文件。'],
     ['--yes', 'delete/test 的明确确认；不会自动获得外部操作权限。Runtime 测试真实调用模型且可能消耗额度。'],
     ['--page N | --all', '仅 list：默认每页 20 项，N 为正整数；--all 返回所有匹配项，不可与 --page 混用。'],
-    ['--search TEXT', '仅 list：按名称/说明不区分大小写包含匹配；与分页组合，不改变服务端数据。'],
+    ['--search TEXT', '仅 list：按名称/说明不区分大小写包含匹配（角色另含提示词）；与分页组合，不改变服务端数据。'],
     ['--session-file PATH', '本用户专用的会话文件绝对路径，默认 ~/.agentforge/cli-session.json；目录0700/文件0600，不要共享或提交。'],
     ['--executable PATH', '仅 runtimes models：按该 CLI 绝对路径或可执行名查询模型目录；留空使用服务 PATH。'],
     ['--endpoint-file PATH', '客户端开发/隔离测试：私有连接文件绝对路径，默认 ~/.agentforge/desktop/desktop-endpoint.json；通常无需指定。不会从文件读取会话或凭据。'],

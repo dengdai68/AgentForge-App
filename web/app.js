@@ -586,10 +586,11 @@ function renderRoles() {
   $("#roles-grid").innerHTML = page.items.map((role) => `
     <div class="agent-card">
       <div class="agent-card-top">
+        <div class="agent-card-avatar color-system">${esc(role.name.slice(0, 1))}</div>
         <div class="agent-card-identity"><h3>${esc(role.name)}</h3></div>
       </div>
       <p>${esc(role.prompt.length > 200 ? role.prompt.slice(0, 200) + "…" : role.prompt)}</p>
-      <div class="agent-footer"><span>${bindingCount(role.id) ? `${bindingCount(role.id)} 位员工绑定` : "未被员工绑定"}</span><span>${timeAgo(role.createdAt)} 创建</span></div>
+      <div class="agent-footer"><span>${bindingCount(role.id) ? `${bindingCount(role.id)} 位员工绑定` : "未被员工绑定"} · ${timeAgo(role.createdAt)} 创建</span><span class="path-mono">${esc(role.id)}</span></div>
       <div class="directory-card-actions"><button class="small-button" data-edit-role="${role.id}">编辑</button><button class="small-button danger" data-delete-role="${role.id}">删除</button></div>
     </div>`).join("") || (query ? `<div class="empty-state" style="margin:0">没有匹配的角色</div>` : `<div class="empty-state" style="margin:0"><strong>还没有角色</strong>角色是一组员工可共用的纯文本系统提示词，创建后在数字员工中绑定。<br /><button class="small-button primary" data-action="new-role">＋ 创建角色</button></div>`);
   renderListPager("roles", page);
@@ -2163,7 +2164,7 @@ async function agentModal(existing = null) {
         <div class="form-field full"><label for="employee-repository-url">绑定 Git 仓库 <b>*</b></label><input id="employee-repository-url" name="repositoryUrl" value="${esc(existing?.repository?.url || "")}" placeholder="https://github.com/owner/repository.git" /><div class="field-error"></div></div>
         <div class="form-field full"><label for="employee-repository-ref">基线分支或提交</label><input id="employee-repository-ref" name="repositoryRef" value="${esc(existing?.repository?.ref || "main")}" /><p class="field-hint">一个研发员工绑定一个默认仓库。新任务启动前检出，员工从此仓库目录执行；仓库绑定不限制其他操作。</p></div>
       </div>
-      <div class="form-field full"><label for="employee-role">绑定角色（可选）</label><select id="employee-role" name="roleId"><option value="">不绑定角色</option>${roles.map(role => `<option value="${esc(role.id)}" ${existing?.roleId === role.id ? "selected" : ""}>${esc(role.name)}</option>`).join("")}</select><p class="field-hint">最多绑定一个角色；其共用提示词与员工自己的系统提示词一起进入沟通和任务执行的系统指令。修改仅影响后续新任务和沟通。</p></div>
+      <div class="form-field full"><label for="employee-role">绑定角色（可选）</label><select id="employee-role" name="roleId"><option value="">不绑定角色</option>${roles.map(role => `<option value="${esc(role.id)}" ${existing?.roleId === role.id ? "selected" : ""}>${esc(role.name)}（${esc(role.id)}）</option>`).join("")}</select><p class="field-hint">最多绑定一个角色；同名角色以 ID 区分。其共用提示词与员工自己的系统提示词一起进入沟通和任务执行的系统指令。修改仅影响后续新任务和沟通。</p></div>
       <div class="form-field full"><label>系统提示词（职责与协作边界）</label><textarea name="systemPrompt">${esc(existing?.systemPrompt || "")}</textarea></div>
       <div class="form-field full"><label>能力与简介</label><textarea name="description" placeholder="擅长什么、能解决哪些问题、何时应咨询这位员工">${esc([existing?.description, ...(existing?.capabilities || []).filter((item) => !existing?.description?.includes(item))].filter(Boolean).join("\n"))}</textarea><p class="field-hint">统一描述业务能力；系统提示词保留具体工作规则和协作边界。</p></div>
       <div class="form-field full" id="employee-market-selection"></div>

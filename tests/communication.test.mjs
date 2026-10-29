@@ -492,7 +492,7 @@ test("handoff commit failure rolls back reply, queue and audit together", async 
   } finally { database?.close(); await rm(root, { recursive: true, force: true }); }
 });
 
-test("communication schema requires only reply; omitted/null handoff saves private and group replies", async () => {
+test("communication schema marks the nullable handoff key required for strict providers while the domain still accepts omitted/null", async () => {
   const root = await mkdtemp(join(tmpdir(), "af-chat-optional-handoff-"));
   const store = createStore();
   try {
@@ -501,7 +501,7 @@ test("communication schema requires only reply; omitted/null handoff saves priva
       for (const result of [{reply:"只有正文"},{reply:"显式不转交",handoffToAgentId:null}]) {
         send(store, chat.id, "普通回复", target.kind === "team" ? ["agent_analyst"] : []);
         const service = createCommunicationService(store, {root, invoke:async input => {
-          assert.deepEqual(input.outputSchema.required,["reply"]);
+          assert.deepEqual(input.outputSchema.required,["reply","handoffToAgentId"]);
           assert.equal(input.outputSchema.additionalProperties,false);
           assert.deepEqual(JSON.parse(await readFile(input.schemaPath,"utf8")),input.outputSchema);
           assert.deepEqual(input.outputSchema.properties.handoffToAgentId.type,["string","null"]);

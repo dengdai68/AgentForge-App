@@ -66,6 +66,27 @@ try {
   await page.locator('#role-form').waitFor({ state: 'detached' });
   await page.locator('#roles-grid .agent-card', { hasText: 'UI_ROLE_MARK_V2' }).waitFor();
 
+  // Cards carry a full-width title plus the role ID; duplicate names stay
+  // distinguishable in the employee selector by that ID.
+  const card = page.locator('#roles-grid .agent-card', { hasText: 'UI_ROLE_MARK_V2' });
+  assert.ok((await card.textContent()).includes(role.id), 'role card shows its ID');
+  const geometry = await card.evaluate(node => {
+    const identity = node.querySelector('.agent-card-identity').getBoundingClientRect();
+    const title = node.querySelector('h3').getBoundingClientRect();
+    return { cardWidth: node.getBoundingClientRect().width, identityWidth: identity.width, titleHeight: title.height };
+  });
+  assert.ok(geometry.identityWidth > 100 && geometry.titleHeight < 40, 'title uses the card width instead of a narrow column: ' + JSON.stringify(geometry));
+  const duplicate = (await api('/api/roles', { name: '界面验收角色', prompt: 'DUPLICATE_PROMPT_TEXT' })).role;
+  await page.locator('.nav-item[data-view="agents"]').click();
+  await page.locator(`[data-edit-agent="${employee.id}"]`).click();
+  await page.locator('#employee-role').waitFor();
+  const optionTexts = await page.locator('#employee-role option').allTextContents();
+  for (const candidate of [role, duplicate]) assert.ok(optionTexts.some(text => text.includes(candidate.name) && text.includes(candidate.id)), 'same-name roles are distinguishable by ID: ' + candidate.id);
+  await page.locator('#agent-form [data-close-modal]').click();
+  await api(`/api/roles/${duplicate.id}`, {}, 'DELETE');
+  await page.locator('.nav-item[data-view="roles"]').click();
+  await page.locator('#roles-grid .agent-card').first().waitFor();
+
   // Search filters by name/prompt and restores on clear.
   await page.locator('#roles-search').fill('不存在的关键词');
   await page.getByText('没有匹配的角色', { exact: true }).waitFor();
@@ -88,7 +109,7 @@ try {
   await page.locator(`[data-edit-agent="${employee.id}"]`).click();
   await page.locator('#employee-role').waitFor();
   const options = await page.locator('#employee-role option').allTextContents();
-  assert.ok(options.includes('不绑定角色') && options.includes('界面验收角色'));
+  assert.ok(options.includes('不绑定角色') && options.some(text => text.startsWith('界面验收角色') && text.includes(role.id)));
   await page.locator('#employee-role').selectOption(role.id);
   await page.locator('#agent-form [type=submit]').click();
   await page.locator('#agent-form').waitFor({ state: 'detached' });
