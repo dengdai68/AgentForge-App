@@ -1,5 +1,7 @@
 # Electron 客户端
 
+角色侧栏入口与现有导航共用 compact.css 的 SVG 蒙版机制，显式提供人物名牌轮廓，随 currentColor 适配选中状态及主题；缺失蒙版不能以实心方块充当图标。共享 NAVIGATION 提供角色的隐藏、重载保留及默认恢复；展示变更不增加宿主接口或 CLI 能力。
+
 平台历史 MCP 以打包 Electron 的 Node 模式运行，Codex 适配器只向该 MCP 子进程传入 Bridge 完整 env；历史服务 required，初始化失败不静默丢工具。协作流不再固定附加验收说明或显示停止答疑按钮，经理结论按普通消息排列；未归档输入、人类确认与内部取消/审计规则保留，气泡沿用共享紧凑间距。
 
 图标资源约定：web/icons/application.png 是用户提供的蓝紫 A 原图，保留原始字节；可选开发脚本仅用 macOS sips/iconutil 缩放并封装 ICNS，不重绘或覆盖 PNG。无浏览器、网络和新依赖，不作为发布或用户运行时工具要求。安装包读取已提交 ICNS，Dock/侧栏读取同源 PNG，菜单栏模板使用原图 alpha 轮廓；过时三柱 SVG 已移除。

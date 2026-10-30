@@ -693,10 +693,10 @@ test("task search combines name, exact status and stable team identity", async (
 
 test("presentation choices survive reload without storing credentials or domain state", () => {
   const storage = memoryStorage();
-  const choices = { version: 1, theme: "minimal", hiddenViews: ["manual", "agents", "manual", "settings", "unknown"], showGroups: false, showIcons: false, showCounts: false, token: "private-sentinel", task: { status: "done" } };
+  const choices = { version: 1, theme: "minimal", hiddenViews: ["manual", "agents", "roles", "manual", "settings", "unknown"], showGroups: false, showIcons: false, showCounts: false, token: "private-sentinel", task: { status: "done" } };
   assert.equal(savePreferences(choices, () => storage), true);
   const restored = readPreferences(() => storage);
-  assert.deepEqual(restored, { version: 2, theme: "minimal", hiddenViews: ["overview", "agents", "manual"], showGroups: false, showIcons: false, showCounts: false, showUnread: true, directoryTheme: "vscode-light" });
+  assert.deepEqual(restored, { version: 2, theme: "minimal", hiddenViews: ["overview", "agents", "roles", "manual"], showGroups: false, showIcons: false, showCounts: false, showUnread: true, directoryTheme: "vscode-light" });
   assert.doesNotMatch(storage.getItem(PREFERENCES_KEY), /private-sentinel|token|task|settings|unknown/);
   assert.deepEqual(normalizePreferences(null).hiddenViews, ["overview", "manual"]);
   assert.deepEqual(normalizePreferences({ version: 2, hiddenViews: [] }).hiddenViews, [], "a deliberate later choice can show overview");

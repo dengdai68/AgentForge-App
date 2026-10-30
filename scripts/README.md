@@ -6,6 +6,8 @@ test-roles-ui.mjs 在隔离 Electron 验收角色目录：导航入口、创建/
 
 独立客户端源码 UI 验收按真实目录树逐级展开 docs/notes 后读取夹具，不假设工作目录仍有 docs 特殊默认展开。所有验收与构建都从 AgentForge-App 自身依赖运行，不连接原仓库服务。
 
+角色 UI 验收还覆盖外观设置隐藏角色、重载后保留、空 BUILD 分组隐藏与恢复默认；保存暖白/极简宽屏及原生窄窗口的 SVG 人物名牌图标截图。只验证客户端展示偏好，不调用 Provider 或扩展 CLI 能力。
+
 AGENTFORGE_WORKSPACE_REAL=1 node scripts/test-workspace-files.mjs：隔离真实Claude代码开发/独立测试，全部通过CLI配置团队、员工、工作流与任务，非docs产物和真实样例MP4。AGENTFORGE_WORKSPACE_APP指定打包app，AGENTFORGE_WORKSPACE_CLAUDE指定实际CLI；同一隔离服务操作Electron的宽窄目录/CHANGE、1005项翻页、大文件下载与人类确认。不修改操作者任务或凭据，合成大小/分页数据明确为UI夹具。
 
 验收脚本失败可用 AGENTFORGE_WORKSPACE_RESUME=系统临时目录内的af-workspace-case-*证据目录，继续同一真实任务的UI及人类确认；不重新创建或启动模型任务。仅接受已有失败证据的隔离夹具，原失败evidence.json保留，续验写evidence-resumed.json。

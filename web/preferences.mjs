@@ -7,6 +7,7 @@ export const NAVIGATION = [
   { id: "teams", label: "团队", group: "OPERATIONS" },
   { id: "workflows", label: "工作流", group: "OPERATIONS" },
   { id: "agents", label: "数字员工", group: "BUILD" },
+  { id: "roles", label: "角色", group: "BUILD" },
   { id: "mcp-marketplace", label: "MCP 市场", group: "BUILD" },
   { id: "marketplace", label: "插件市场", group: "BUILD" },
   { id: "manual", label: "开发手册", group: "REFERENCE" },

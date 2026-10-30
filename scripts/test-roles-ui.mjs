@@ -41,11 +41,33 @@ try {
   await page.getByRole('button', { name: '登录', exact: true }).click();
   await page.locator('#account-name').waitFor();
 
+  // Roles participates in the same persisted visibility choices as every
+  // optional sidebar entry, including empty BUILD groups and default restore.
+  await page.goto(origin + '/settings/appearance');
+  const roleVisibility = page.getByRole('checkbox', { name: '显示角色', exact: true });
+  await roleVisibility.waitFor();
+  assert.ok(await roleVisibility.isChecked());
+  await roleVisibility.uncheck();
+  assert.ok(await page.locator('.nav-item[data-view="roles"]').isHidden());
+  await page.reload();
+  await roleVisibility.waitFor();
+  assert.equal(await roleVisibility.isChecked(), false, 'role visibility survives reload');
+  assert.ok(await page.locator('.nav-item[data-view="roles"]').isHidden());
+  for (const id of ['agents', 'mcp-marketplace', 'marketplace']) await page.locator(`[data-nav-visible="${id}"]`).uncheck();
+  assert.ok(await page.locator('[data-navigation-group="build"]').isHidden(), 'empty BUILD group is hidden');
+  await page.locator('[data-reset-navigation]').click();
+  assert.ok(await roleVisibility.isChecked());
+  assert.ok(await page.locator('.nav-item[data-view="roles"]').isVisible());
+
   // Standalone BUILD-group navigation entry next to 数字员工.
   await page.locator('.nav-item[data-view="roles"]').click();
   await page.waitForURL(/\/roles$/);
   assert.equal(await page.locator('#breadcrumb-current').textContent(), '角色');
   await page.locator('#roles-view .empty-state').waitFor();
+  const roleIcon = page.locator('.nav-item[data-view="roles"] .nav-icon');
+  assert.ok(await roleIcon.isVisible());
+  const roleMask = await roleIcon.evaluate(node => getComputedStyle(node, '::before').maskImage);
+  assert.match(roleMask, /data:image\/svg\+xml/, 'desktop role icon has an SVG mask rather than an unmasked solid square');
 
   // Create through the modal; only name + plain-text prompt are requested.
   await page.locator('#roles-view .directory-toolbar [data-action="new-role"]').click();
@@ -58,6 +80,14 @@ try {
   assert.equal(roles.length, 1);
   const role = roles[0];
   assert.deepEqual(Object.keys(role).sort(), ['createdAt', 'id', 'name', 'prompt'].sort(), 'role holds only name and prompt plus system metadata');
+  for (const theme of ['minimal', 'warm']) {
+    await page.goto(origin + '/settings/appearance');
+    await page.locator(`[name="theme"][value="${theme}"]`).check();
+    await page.goto(origin + '/roles');
+    await page.locator(`[data-edit-role="${role.id}"]`).waitFor();
+    assert.ok(await roleIcon.isVisible(), `role icon is visible in ${theme} theme`);
+    await page.screenshot({ path: join(root, `roles-${theme}-wide.png`) });
+  }
 
   // Edit the prompt in place.
   await page.locator(`[data-edit-role="${role.id}"]`).click();
@@ -129,12 +159,15 @@ try {
   await page.locator('#modal-close').click();
 
   // Narrow window keeps the toolbar usable.
-  await page.setViewportSize({ width: 760, height: 800 });
+  await app.evaluate(({ BrowserWindow }) => { const window = BrowserWindow.getAllWindows().find(item => item.isVisible()); window.setSize(760, 800); });
+  await page.waitForFunction(() => innerWidth <= 760);
+  assert.ok(await roleIcon.isVisible(), 'role SVG remains visible in narrow icon-only navigation');
   const toolbar = await page.locator('#roles-view .directory-toolbar').evaluate(node => {
     const search = node.querySelector('input').getBoundingClientRect(), button = node.querySelector('button').getBoundingClientRect();
     return { separate: search.right <= button.left, fits: button.right <= innerWidth };
   });
   assert.deepEqual(toolbar, { separate: true, fits: true }, 'narrow layout keeps search and create on one usable row');
+  await page.screenshot({ path: join(root, 'roles-narrow.png') });
 
   // Unbind, then deletion succeeds.
   await page.locator('.nav-item[data-view="agents"]').click();
