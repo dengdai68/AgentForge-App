@@ -63,3 +63,5 @@ AGENTFORGE_CLI_E2E=1 或 AGENTFORGE_TASK_CLI_E2E=1 的真实开发验收启动�
 CHANGE 回归确认目录根下无重复「没有更改」，整体空态及错误/未初始化语义另由展示单测覆盖。
 
 记录可读性回归使用超过 50 条的 Provider 夹具输出检查普通提示词分页；有界延迟观察真实运行中的夹具 Trace 与终态成员颜色，私聊/群聊检查姓名色和窄窗口，不冒充真实模型。源码检查同样显式选员工、加载旧页及滚动触发正文。
+
+test-marketplace-edit.mjs 同时验收角色宽窄空态与 MCP 一致、重复插件/MCP UI/CLI/API 导入覆盖、插件拆分 MCP 和停用员工绑定、并发创建与不兼容整批回滚；AGENTFORGE_MCP_EDIT_APP 可验证打包应用。

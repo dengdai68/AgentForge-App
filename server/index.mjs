@@ -69,6 +69,29 @@ try {
 }
 const runtimeConfiguration = createRuntimeConfiguration(runtimeConfigRoot);
 const marketplace = createMarketplace(runtimeConfigRoot);
+// Serialize manual imports through preparation and commit, so simultaneous
+// first imports cannot both miss the existing catalog entry.
+let extensionImportTail=Promise.resolve();
+function importExtensions(prepare) {
+  const operation=extensionImportTail.then(async()=>{
+    const targetStore=store, result=await prepare();
+    const candidates=result.plugins?[...result.plugins,...result.mcps]:[result];
+    try {
+      const plan=targetStore.planExtensionImport(candidates,await marketplace.list());
+      const bindings=await Promise.all(plan.bindings.map(async binding=>({
+        agentId:binding.agentId,previousRuntime:binding.previousRuntime,
+        runtime:{profileId:binding.previousRuntime.profileId,...await marketplace.resolve(binding.selection,binding.previousRuntime.provider)}
+      })));
+      if(store!==targetStore || resettingData)throw new Error('实例正在重置，本次导入未应用');
+      return {...result,...targetStore.replaceImportedExtensions(plan.replacements,bindings)};
+    } catch(error) {
+      for(const item of candidates)try{targetStore.removeExtension(item);}catch(cleanupError){diagnostic('extensions.import_cleanup_failed',{error:cleanupError});}
+      throw error;
+    }
+  });
+  extensionImportTail=operation.catch(()=>{});
+  return operation;
+}
 const pluginUpdates=createPluginUpdates({getStore:()=>store,marketplace,canRun:()=>!resettingData});
 const runExecutionOptions = { runFilesRoot, resolveGitCredential: (url) => runtimeConfiguration.resolveGitCredential(url) };
 let communications = createCommunicationService(store, { root: join(runFilesRoot, "communications"), files: runFiles });
@@ -388,14 +411,16 @@ async function routeApi(request, response, pathname, searchParams = new URLSearc
   }
   if (pathname === "/api/runtime/mcp-marketplace" && ["GET", "POST"].includes(request.method)) {
     response.setHeader("Cache-Control", "no-store");
-    const result = request.method === "GET" ? await marketplace.mcpCatalog() : await marketplace.add({...await readJson(request), kind:"mcp", visibility:"market"});
+    const input=request.method==='POST'?await readJson(request):null;
+    const result = request.method === "GET" ? await marketplace.mcpCatalog() : await importExtensions(()=>marketplace.add({...input, kind:"mcp", visibility:"market"}));
     if (request.method === "GET") result.entries = result.entries.filter(item => !store.isExtensionRemoved("mcp", item.id));
     sendJson(response, request.method === "GET" ? 200 : 201, result);
     return true;
   }
   if (pathname === "/api/runtime/marketplace" && ["GET", "POST"].includes(request.method)) {
     response.setHeader("Cache-Control", "no-store");
-    const result = request.method === "GET" ? await marketplace.catalog() : await marketplace.import(await readJson(request));
+    const input=request.method==='POST'?await readJson(request):null;
+    const result = request.method === "GET" ? await marketplace.catalog() : await importExtensions(()=>marketplace.import(input));
     if (request.method === "GET") result.plugins = result.plugins.filter(item => !store.isExtensionRemoved("plugin", item.id));
     sendJson(response, request.method === "GET" ? 200 : 201, result);
     return true;

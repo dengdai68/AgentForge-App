@@ -592,7 +592,10 @@ function renderRoles() {
       <p>${esc(role.prompt.length > 200 ? role.prompt.slice(0, 200) + "…" : role.prompt)}</p>
       <div class="agent-footer"><span>${bindingCount(role.id) ? `${bindingCount(role.id)} 位员工绑定` : "未被员工绑定"} · ${timeAgo(role.createdAt)} 创建</span><span class="path-mono">${esc(role.id)}</span></div>
       <div class="directory-card-actions"><button class="small-button" data-edit-role="${role.id}">编辑</button><button class="small-button danger" data-delete-role="${role.id}">删除</button></div>
-    </div>`).join("") || (query ? `<div class="empty-state" style="margin:0">没有匹配的角色</div>` : `<div class="empty-state" style="margin:0"><strong>还没有角色</strong>角色是一组员工可共用的纯文本系统提示词，创建后在数字员工中绑定。<br /><button class="small-button primary" data-action="new-role">＋ 创建角色</button></div>`);
+    </div>`).join("");
+  $("#roles-grid").hidden = !page.items.length;
+  $("#roles-empty").hidden = Boolean(page.items.length);
+  $("#roles-empty").textContent = query ? "没有匹配的角色" : "尚未创建角色，可创建后在员工中绑定。";
   renderListPager("roles", page);
 }
 

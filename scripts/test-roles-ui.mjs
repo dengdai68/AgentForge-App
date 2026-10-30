@@ -63,7 +63,7 @@ try {
   await page.locator('.nav-item[data-view="roles"]').click();
   await page.waitForURL(/\/roles$/);
   assert.equal(await page.locator('#breadcrumb-current').textContent(), '角色');
-  await page.locator('#roles-view .empty-state').waitFor();
+  await page.locator('#roles-empty').waitFor();
   const roleIcon = page.locator('.nav-item[data-view="roles"] .nav-icon');
   assert.ok(await roleIcon.isVisible());
   const roleMask = await roleIcon.evaluate(node => getComputedStyle(node, '::before').maskImage);

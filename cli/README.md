@@ -36,3 +36,5 @@ CLI 仅连接运行中的客户端；源码/安装版统一通过私有 endpoint
 扩展按完整插件：`plugins import --file source.json` 直接整批安装 Git/本机目录中全部 Claude/Codex 插件；自带 MCP 拆分后仍由员工单独选择。`plugins get ID` 查组件，`mcps get ID` 查脱敏 JSON，stdio/SSE/Streamable HTTP 均支持。员工只写 pluginIds/mcpIds，创建和更新均可设置 active/inactive；操作帮助/schema 同步当前协议。
 
 市场内相对目录和 HTTPS github/url/git-subdir 条目一起安装，保留 ref/sha；不支持的 npm/archive/command 整批报错。plugins list 只加 Runtime 摘要列，get 按需展开 compatibility/reasons，help/schema 说明静态兼容不等于真实调用已通过。含 cwd/env_vars 的 stdio MCP 只支持 Codex；员工选择与 UI/API 使用同一兼容性规则。
+
+重复 plugins import 按同来源地址＋插件名称覆盖；mcps create（含插件拆分 MCP）按安装名称覆盖，去首尾空格并区分大小写。当前员工引用原子切换，冻结历史不变，不兼容时整批拒绝。输入参数保持；help/schema、文本覆盖计数及 JSON replacements/employees/historyRetained 回执同步。

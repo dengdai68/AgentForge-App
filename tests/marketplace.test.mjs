@@ -67,6 +67,33 @@ test('MCP edits preserve masked secrets and immutable files, and atomically rebi
   assert.throws(()=>store.replaceMcpExtension(next.id,{...next,id:randomUUID()},[{agentId:employee.id,previousRuntime:before,runtime}]),/已变化/);
   assert.equal(store.isExtensionRemoved('mcp',next.id),false);
 });
+test('import replacement changes plugin and MCP bindings together, rolls back stale employees and retains frozen files',async t=>{
+  const {root,market}=await fixture(t),source=await plugin(root),oldPlugin=(await market.import({path:source})).plugins[0],oldMcp=await market.add(mcp);
+  const store=createStore({databasePath:join(root,'import.sqlite')});t.after(()=>store.close());
+  const duplicate=await market.add({...mcp,content:JSON.stringify({mcpServers:{another:{command:'node'}}})});
+  const frozen=await market.resolve({pluginIds:[oldPlugin.id],mcpIds:[oldMcp.id,duplicate.id]},'claude-code');
+  const employee=store.createAgent({name:'覆盖验证',status:'inactive',runtime:{provider:'claude-code',...frozen}});
+  const nextPlugin=(await market.import({path:source})).plugins[0],nextMcp=await market.add({...mcp,description:'新说明'});
+  const plan=store.planExtensionImport([nextPlugin,nextMcp],await market.list());
+  const {replacements}=plan;assert.equal(replacements.length,3,'all previously duplicated names are retired');
+  assert.deepEqual(plan.bindings[0].selection,{pluginIds:[nextPlugin.id],mcpIds:[nextMcp.id]},'merged references do not leave duplicate MCP choices');
+  assert.throws(()=>store.planExtensionImport([nextMcp,nextMcp],[]),/重复安装名称/);
+  const otherOrigin={...oldPlugin,id:randomUUID(),source:{url:'https://example.invalid/other.git'}};
+  assert.deepEqual(store.planExtensionImport([nextPlugin],[otherOrigin]).replacements,[],'different plugin origins remain installed');
+  const runtime=await market.resolve({pluginIds:[nextPlugin.id],mcpIds:[nextMcp.id]},'claude-code');
+  const binding={agentId:employee.id,previousRuntime:employee.runtime,runtime};
+  assert.throws(()=>store.replaceImportedExtensions(replacements,[]),/已变化/);
+  assert.equal(store.isExtensionRemoved('plugin',oldPlugin.id),false);
+  assert.throws(()=>store.replaceImportedExtensions(replacements,[{...binding,previousRuntime:{}}]),/已变化/);
+  assert.deepEqual(store.listAgents().find(a=>a.id===employee.id).runtime,employee.runtime);
+  const receipt=store.replaceImportedExtensions(replacements,[binding]);
+  assert.deepEqual(receipt.employees,[{id:employee.id,name:employee.name}]);assert.equal(receipt.historyRetained,true);
+  const current=store.listAgents().find(a=>a.id===employee.id);assert.equal(current.status,'inactive');assert.deepEqual(current.runtime.extensionSelection,runtime.extensionSelection);
+  for(const item of replacements)assert.equal(store.isExtensionRemoved(item.kind,item.previousId),true);
+  assert.match(await readFile(frozen.skillPaths[0],'utf8'),/Read references/);
+  assert.match(await readFile(frozen.mcpConfigPaths[0],'utf8'),/PRIVATE_SENTINEL/);
+  assert.throws(()=>store.replaceImportedExtensions(replacements,[binding]),/已变化/);
+});
 test('edited MCP really calls the new service while a frozen reference still calls the original',async t=>{
   const {root,market}=await fixture(t);
   const content=proof=>JSON.stringify({mcpServers:{proof:{command:process.execPath,args:[resolve('scripts/marketplace-probe-mcp.mjs'),join(root,'probe.log'),proof]}}});

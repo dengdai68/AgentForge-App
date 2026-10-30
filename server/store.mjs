@@ -752,6 +752,34 @@ export function createStore({ databasePath = process.env.AGENTFORGE_DB_PATH || "
         return {plugins:replacements.map(({id,previousId,name})=>({id,previousId,name})),employees};
       });
     },
+    planExtensionImport(candidates,current) {
+      const origin=item=>item.source?.origin?.url || item.source?.url;
+      const identity=item=>JSON.stringify([item.kind,item.kind==='plugin'?origin(item):null,item.name]);
+      if(new Set(candidates.map(identity)).size!==candidates.length)throw new Error('本批次包含重复安装名称，请调整名称后重新导入');
+      const candidateIds=new Set(candidates.map(item=>item.id));
+      const active=current.filter(item=>!candidateIds.has(item.id) && !this.isExtensionRemoved(item.kind,item.id));
+      const replacements=candidates.flatMap(next=>active.filter(old=>identity(old)===identity(next)).map(old=>({kind:next.kind,id:next.id,previousId:old.id,name:next.name})));
+      const maps=Object.fromEntries(['plugin','mcp'].map(kind=>[kind,new Map(replacements.filter(item=>item.kind===kind).map(item=>[item.previousId,item.id]))]));
+      const users=this.listAgents().filter(item=>['plugin','mcp'].some(kind=>item.runtime?.extensionSelection?.[kind==='plugin'?'pluginIds':'mcpIds']?.some(id=>maps[kind].has(id))));
+      const bindings=users.map(item=>({agentId:item.id,previousRuntime:item.runtime,selection:Object.fromEntries(['plugin','mcp'].map(kind=>{
+        const key=kind==='plugin'?'pluginIds':'mcpIds';
+        return [key,[...new Set(item.runtime.extensionSelection[key].map(id=>maps[kind].get(id)||id))]];
+      }))}));
+      return {replacements,bindings};
+    },
+    replaceImportedExtensions(replacements,bindings) {
+      return this.transaction(()=>{
+        const keys=replacements.map(item=>`${item.kind}:${item.previousId}`);
+        if(new Set(keys).size!==keys.length || replacements.some(item=>!['plugin','mcp'].includes(item.kind) || !item.id || !item.previousId || item.id===item.previousId || this.isExtensionRemoved(item.kind,item.previousId) || this.isExtensionRemoved(item.kind,item.id)))throw new Error('扩展配置已变化，请重新导入');
+        const users=state.agents.filter(item=>replacements.some(next=>item.runtime?.extensionSelection?.[next.kind==='plugin'?'pluginIds':'mcpIds']?.includes(next.previousId)));
+        if(bindings.length!==users.length || new Set(bindings.map(item=>item.agentId)).size!==bindings.length || users.some(item=>!bindings.some(binding=>binding.agentId===item.id && JSON.stringify(binding.previousRuntime)===JSON.stringify(item.runtime))))throw new Error('员工配置已变化，本次导入未应用');
+        for(const binding of bindings)this.updateAgent(binding.agentId,{runtime:binding.runtime});
+        for(const item of replacements)this.removeExtension({kind:item.kind,id:item.previousId,name:item.name});
+        const employees=users.map(({id,name})=>({id,name}));
+        if(replacements.length)addEvent({type:'configuration.extensions_imported',actor:humanMember,message:'重复导入已覆盖当前扩展并更新员工选择，冻结历史保持不变',data:{replacements,employees}});
+        return {replacements,employees,historyRetained:true};
+      });
+    },
     replaceMcpExtension(previousId,replacement,bindings) {
       return this.transaction(()=>{
         if(this.isExtensionRemoved('mcp',previousId) || !replacement?.id || replacement.id===previousId)throw new Error('MCP 已变化，请刷新后重新编辑');

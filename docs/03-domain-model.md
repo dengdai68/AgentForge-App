@@ -1,5 +1,7 @@
 # 领域模型
 
+重复手动导入按同一来源地址＋插件名称匹配插件，按安装名称（去首尾空格、区分大小写）匹配 MCP；不同来源的同名插件保留。成功以新不可变版本覆盖当前目录项，原子更新所有当前员工（含停用）的选择并合并重复引用；Task/Run、排队投递和历史文件不变。失败整批保留原目录及绑定，候选从当前目录退役。首次安装不自动绑定员工；已存在的重复项在下次同标识导入时一并替换，不做全库清理。响应增加 replacements（kind/id/previousId/name）、employees（仅 ID/名称）、historyRetained；原 plugins/mcps 或 MCP 摘要字段不变。
+
 工作流 artifactPaths 是工作目录内建议交付位置（文件或目录），可为空，不再限定/补齐 docs。持久化与冻结配置保留原路径，不进行路径迁移或重置。当前文件/CHANGE覆盖所有普通业务路径，repos仅保留研发员工检出及初始提交关系；读取排除内部元数据、凭据和符号链接。执行快照记录各业务路径，仍受20MiB单文件与5000文件上限，快照失败不是员工执行权限或任务结论；大文件可在工作目录查看元数据并下载，不能冒充已保存不可变快照。
 
 Store 保存 pluginAutoUpdate 开关（默认开启）与 pluginUpdateIntervalMinutes（默认2，整数1–1440），非空部分设置经过同一命令校验并记录 configuration.plugin_auto_update；按来源替换插件时核对员工 Runtime 未被并发编辑，原子更新当前选择者并退役旧目录版本，configuration.plugins_updated 的 actor 是系统插件更新而非人类。Task/Run/排队调用的冻结 manifest 与原始文件不改。关闭开关仅停止后续定时检查，已开始检查仍完成；退出本机服务不再检查。

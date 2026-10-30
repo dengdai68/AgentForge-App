@@ -581,3 +581,11 @@ test('runtime connection schema validates effort vocabulary and model stays free
   assert.deepEqual(schema.schema.properties.effort.enum, ['', 'low', 'medium', 'high', 'xhigh', 'max', 'ultra']);
   assert.match(schema.schema.properties.model.description, /runtimes models/);
 });
+
+test('repeat-import help and receipts expose overwrite behavior without changing input authority',async()=>{
+  for(const [group,operation] of [['plugins','import'],['mcps','create']]){
+    const result=await captured([group,operation,'--help']);assert.match(result.stdout,/覆盖/);assert.match(result.stdout,/replacements/);
+    const receipt={replacements:[{kind:group==='plugins'?'plugin':'mcp',id:'new-version',previousId:'old-version',name:'同名项'}],employees:[{id:'employee-id',name:'员工'}],historyRetained:true};
+    const output=formatOutput([group,operation],receipt);assert.match(output,/覆盖 1 个已有版本/);assert.match(output,/更新 1 位员工/);assert.match(output,/old-version/);
+  }
+});

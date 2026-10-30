@@ -80,3 +80,7 @@ CLI 连接集中在 cli/client.mjs 的私有 endpoint 发现与实例校验，�
 记录可读性：`renderChatStream` 按 Trace 时间合并提示词/事件并尊重分页窗口；`collaborationRecords` 提供视觉状态投影，沟通按稳定发送者配色，共享 tokens 在 renderer、紧凑覆盖在宿主；CLI 排除视觉元数据。
 
 源码 UI 验收先等待员工首页加载完成再遍历旧页，不把先行渲染的提示词元数据误认为历史已加载；按记录 ID 定位需要滚动读取的正文。
+
+重复导入：server/index.mjs 串行准备，Store 按来源＋名称（插件）或安装名称（MCP）匹配；Store.replaceImportedExtensions 原子切换当前员工及退役旧版本；冻结历史保留。CLI 同步覆盖回执与渐进帮助。角色空态复用 MCP 整行提示。
+
+角色、MCP 和插件目录空态共用 market-directory-empty，使用主题 surface-soft 浅色背景及 6px 圆角，宽窄布局一致。

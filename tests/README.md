@@ -43,3 +43,5 @@ UI 使用隔离 Electron 实例检查宽窄布局、搜索、展开和滚动。�
 安装包检查先确认控制台未选择员工时没有日志，再显式选择员工、滚动到正文并验证延迟内容。
 
 提示词回归覆盖未完整加载的长调用、交错调用去重与隐藏帧分页边界。协作/沟通配色只投影真实消息事实；CLI 回归确保视觉元数据不泄漏到 JSON。
+
+重复导入验证：marketplace.test.mjs 覆盖插件＋MCP同事务替换、停用员工、过期绑定回滚及历史文件可读；configuration-cli.test.mjs 覆盖渐进帮助/schema与覆盖回执。test-marketplace-edit.mjs 使用隔离 Electron/CLI/API 验证并发导入、不同来源、整批失败与角色宽窄空态。

@@ -56,3 +56,5 @@ Store 拥有状态，Runtime 不直接写领域对象。平台执行员工和经
 扩展统一为插件级不可变版本：Git/本机来源中全部插件作为一个批次发布，失败不留下部分安装；自带 MCP 拆成独立市场项，不随插件启用。认证详情接口按需读组件/脱敏 JSON；员工输入仅 pluginIds/mcpIds，创建/编辑均可设置状态。stdio/SSE/Streamable HTTP 支持两种 Runtime。完整契约见 docs/15。
 
 插件市场接受 Claude/Codex 市场中的本地条目及 HTTPS github/url/git-subdir 远程条目，保留真实 revision；不支持来源整批失败。组件按 Runtime 分别解析，API 返回 providers/compatibility 及原因，员工绑定由同一解析拒绝不兼容选择。配置根允许祖先正常别名、受管目录本身拒绝链接。含 Codex 专用 cwd/env_vars 的 MCP 仅供 Codex，工作目录由启动器应用。
+
+手动重复导入由 HTTP 串行准备；Store 按同来源地址＋名称、MCP 按安装名称覆盖，Store.replaceImportedExtensions 事务更新当前员工（含停用）、合并重复引用并退役旧目录项。失败整批保留原状态，候选退役；冻结任务和排队调用的文件不变。回执包含 reference-only replacements/employees/historyRetained。
