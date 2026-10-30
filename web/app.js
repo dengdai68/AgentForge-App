@@ -20,17 +20,17 @@ function routeFromLocation() {
   if (manualMatch) return { view: "manual", runId: null, manualPage: manualMatch[1] };
   if (location.pathname === "/tasks/archive") return { view: "tasks", runId: null, taskArchiveView: true };
   const view = location.pathname.replace(/^\//, "") || location.hash.slice(1) || "tasks";
-  return { view: ["overview", "tasks", "teams", "workflows", "agents", "manual", "marketplace", "mcp-marketplace"].includes(view) ? view : "tasks", runId: null, manualPage: "data-model" };
+  return { view: ["overview", "tasks", "teams", "workflows", "agents", "roles", "manual", "marketplace", "mcp-marketplace"].includes(view) ? view : "tasks", runId: null, manualPage: "data-model" };
 }
 const initialRoute = routeFromLocation();
 const state = {
-  agents: [], teams: [], tasks: [], runs: [], events: [], workflowTemplates: [],
+  agents: [], teams: [], tasks: [], runs: [], events: [], workflowTemplates: [], roles: [],
   workspace: null, selectedRunId: initialRoute.runId, selectedAgentId: null,
   taskSearch: { name: "", status: "all", teamId: "" }, taskArchiveView: Boolean(initialRoute.taskArchiveView),
   currentView: initialRoute.view, manualPage: initialRoute.manualPage || "data-model",
   settingsPage: initialRoute.settingsPage || "general",
   selectedChatId: initialRoute.chatId || null,
-  eventSource: null, listPages: { tasks: 1, archive: 1, teams: 1, workflows: 1, agents: 1 },
+  eventSource: null, listPages: { tasks: 1, archive: 1, teams: 1, workflows: 1, agents: 1, roles: 1 },
 };
 // Local interaction state is scoped to a Run; it never changes domain state.
 const workspaceViews = new Map();
@@ -278,7 +278,7 @@ function renderShell() {
   const taskHint = $("#nav-ws-hint");
   taskHint.style.display = count ? "" : "none";
   taskHint.textContent = "待你处理";
-  const names = { overview: "总览", tasks: "任务中心", teams: "团队", workflows: "工作流", agents: "数字员工", manual: "开发手册", workspace: "任务空间", settings: "设置", marketplace: "插件市场", "mcp-marketplace": "MCP 市场" };
+  const names = { overview: "总览", tasks: "任务中心", teams: "团队", workflows: "工作流", agents: "数字员工", roles: "角色", manual: "开发手册", workspace: "任务空间", settings: "设置", marketplace: "插件市场", "mcp-marketplace": "MCP 市场" };
   $("#breadcrumb-current").textContent = state.currentView === "communication" ? "沟通"
     : state.currentView === "tasks" && state.taskArchiveView ? "归档历史" : names[state.currentView];
 }
@@ -571,10 +571,65 @@ function renderAgents() {
       <div class="capabilities">${(agent.capabilities || []).map((capability) => `<span class="capability">${esc(capability)}</span>`).join("")}</div>
       <div class="agent-runtime"><span>${providerLabel(agent)}${agent.runtime?.model ? " · " + esc(agent.runtime.model) : " · CLI 默认模型"}${agent.runtime?.effort ? " · 思考 " + esc(agent.runtime.effort) : ""}${agent.runtime?.profile ? " · profile: " + esc(agent.runtime.profile) : ""}</span><span>插件 ${agent.runtime?.extensionSelection?.pluginIds?.length || 0} · MCP ${agent.runtime?.extensionSelection?.mcpIds?.length || 0}</span></div>
       <div class="agent-footer"><span class="agent-status">● ${agent.status === "active" ? "可用" : "已停用"}</span><span>${agent.kind === "manager" ? "项目经理" : agent.kind === "developer" ? "研发工程师 · 已绑定仓库" : "其他 · 能力标签非工具权限"}</span></div>
+      ${agent.roleId ? `<div class="agent-runtime"><span>角色：${esc(state.roles.find(role => role.id === agent.roleId)?.name || "（角色不存在）")}</span></div>` : ""}
       <div class="directory-card-actions"><button class="small-button primary" data-chat-agent="${agent.id}">对话</button><button class="small-button" data-edit-agent="${agent.id}">编辑</button><button class="small-button danger" data-delete-agent="${agent.id}">删除</button></div>
     </div>`).join("") || (query ? `<div class="empty-state" style="margin:0">没有匹配的数字员工</div>` : `<div class="empty-state" style="margin:0"><strong>还没有数字员工</strong>创建第一位数字员工并绑定本机 Runtime。<br /><button class="small-button primary" data-action="new-agent">＋ 创建数字员工</button></div>`);
   renderListPager("agents", page);
 }
+
+/* ---------- 角色 ---------- */
+function renderRoles() {
+  const query = ($("#roles-search").value || "").trim().toLowerCase();
+  const filtered = state.roles.filter(role => `${role.name} ${role.prompt || ""}`.toLowerCase().includes(query));
+  const page = paginate(filtered, state.listPages.roles); state.listPages.roles = page.page;
+  const bindingCount = (roleId) => state.agents.filter(agent => agent.roleId === roleId).length;
+  $("#roles-grid").innerHTML = page.items.map((role) => `
+    <div class="agent-card">
+      <div class="agent-card-top">
+        <div class="agent-card-avatar color-system">${esc(role.name.slice(0, 1))}</div>
+        <div class="agent-card-identity"><h3>${esc(role.name)}</h3></div>
+      </div>
+      <p>${esc(role.prompt.length > 200 ? role.prompt.slice(0, 200) + "…" : role.prompt)}</p>
+      <div class="agent-footer"><span>${bindingCount(role.id) ? `${bindingCount(role.id)} 位员工绑定` : "未被员工绑定"} · ${timeAgo(role.createdAt)} 创建</span><span class="path-mono">${esc(role.id)}</span></div>
+      <div class="directory-card-actions"><button class="small-button" data-edit-role="${role.id}">编辑</button><button class="small-button danger" data-delete-role="${role.id}">删除</button></div>
+    </div>`).join("") || (query ? `<div class="empty-state" style="margin:0">没有匹配的角色</div>` : `<div class="empty-state" style="margin:0"><strong>还没有角色</strong>角色是一组员工可共用的纯文本系统提示词，创建后在数字员工中绑定。<br /><button class="small-button primary" data-action="new-role">＋ 创建角色</button></div>`);
+  renderListPager("roles", page);
+}
+
+function roleModal(existing = null) {
+  openModal(`
+    <h2>${existing ? "编辑角色" : "创建角色"}</h2>
+    <p class="modal-intro">角色只有名称和纯文本提示词，代表一组员工可共用的系统提示词；不是员工类型、职责标签或权限规则。编辑只影响之后创建的任务和后续沟通投递，不改写已冻结的任务记录。</p>
+    <form id="role-form" novalidate>
+      <div class="form-field full"><label>名称 <b>*</b></label><input name="name" maxlength="80" value="${esc(existing?.name || "")}" placeholder="例如：事实核查员" /><div class="field-error"></div></div>
+      <div class="form-field full"><label>共用系统提示词 <b>*</b></label><textarea name="prompt" placeholder="绑定此角色的员工，在沟通与任务执行中都会把这段文字并入应用系统指令">${esc(existing?.prompt || "")}</textarea><div class="field-error"></div></div>
+      <div class="form-actions">
+        <button type="button" class="ghost-button" data-close-modal>取消</button>
+        <button type="submit" class="primary-button">${existing ? "保存修改" : "创建角色"}</button>
+      </div>
+    </form>`);
+  const form = $("#role-form");
+  form.querySelectorAll(".form-field").forEach((field, index) => {
+    const input = field.querySelector("input,textarea"), label = field.querySelector("label");
+    if (input && label && !label.htmlFor) { input.id ||= `role-field-${index}`; label.htmlFor = input.id; }
+  });
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    clearInvalid(form);
+    let valid = true;
+    if (!form.name.value.trim()) { setInvalid(form.name, "请填写角色名称。"); valid = false; }
+    if (!form.prompt.value.trim()) { setInvalid(form.prompt, "请填写共用系统提示词。"); valid = false; }
+    if (!valid) return;
+    try {
+      await api(existing ? `/api/roles/${existing.id}` : "/api/roles", { method: existing ? "PUT" : "POST", body: JSON.stringify({ name: form.name.value, prompt: form.prompt.value }) });
+      closeModal();
+      toast(`角色「${form.name.value.trim()}」已${existing ? "更新" : "创建"}。`);
+      await refresh();
+    } catch (error) { toast(error.message, true); }
+  });
+}
+
+const newRoleModal = () => roleModal();
 
 /* ---------- 开发手册：当前实现的可检查系统图 ---------- */
 const manualPages = {
@@ -2092,9 +2147,9 @@ function workflowModal(template = null) {
 }
 
 async function agentModal(existing = null) {
-  let profiles;
-  try { profiles = (await api('/api/settings/runtime-profiles')).profiles; }
-  catch (error) { toast(`Runtime 配置读取失败：${error.message}`, true); return; }
+  let profiles, roles;
+  try { [profiles, roles] = await Promise.all([api('/api/settings/runtime-profiles').then(result => result.profiles), api('/api/roles').then(result => result.roles)]); }
+  catch (error) { toast(`配置读取失败：${error.message}`, true); return; }
   if (!profiles.length) { toast("还没有 Runtime 配置，请先在设置 → Runtime 添加连接。", true); return; }
   const runtime = existing?.runtime || {};
 
@@ -2109,6 +2164,7 @@ async function agentModal(existing = null) {
         <div class="form-field full"><label for="employee-repository-url">绑定 Git 仓库 <b>*</b></label><input id="employee-repository-url" name="repositoryUrl" value="${esc(existing?.repository?.url || "")}" placeholder="https://github.com/owner/repository.git" /><div class="field-error"></div></div>
         <div class="form-field full"><label for="employee-repository-ref">基线分支或提交</label><input id="employee-repository-ref" name="repositoryRef" value="${esc(existing?.repository?.ref || "main")}" /><p class="field-hint">一个研发员工绑定一个默认仓库。新任务启动前检出，员工从此仓库目录执行；仓库绑定不限制其他操作。</p></div>
       </div>
+      <div class="form-field full"><label for="employee-role">绑定角色（可选）</label><select id="employee-role" name="roleId"><option value="">不绑定角色</option>${roles.map(role => `<option value="${esc(role.id)}" ${existing?.roleId === role.id ? "selected" : ""}>${esc(role.name)}（${esc(role.id)}）</option>`).join("")}</select><p class="field-hint">最多绑定一个角色；同名角色以 ID 区分。其共用提示词与员工自己的系统提示词一起进入沟通和任务执行的系统指令。修改仅影响后续新任务和沟通。</p></div>
       <div class="form-field full"><label>系统提示词（职责与协作边界）</label><textarea name="systemPrompt">${esc(existing?.systemPrompt || "")}</textarea></div>
       <div class="form-field full"><label>能力与简介</label><textarea name="description" placeholder="擅长什么、能解决哪些问题、何时应咨询这位员工">${esc([existing?.description, ...(existing?.capabilities || []).filter((item) => !existing?.description?.includes(item))].filter(Boolean).join("\n"))}</textarea><p class="field-hint">统一描述业务能力；系统提示词保留具体工作规则和协作边界。</p></div>
       <div class="form-field full" id="employee-market-selection"></div>
@@ -2146,6 +2202,7 @@ async function agentModal(existing = null) {
     input.repository = input.kind === "developer" ? { url: data.get("repositoryUrl"), ref: data.get("repositoryRef") } : null;
     delete input.repositoryUrl; delete input.repositoryRef;
     input.capabilities = [];
+    input.roleId = data.get("roleId") || null;
     input.runtime = {
       profileId: data.get("runtimeProfileId"),
       extensionSelection
@@ -2165,14 +2222,17 @@ async function agentModal(existing = null) {
 const newAgentModal = () => agentModal();
 
 function configurationDeletionModal(kind, id) {
-  const employee = kind === "agent", item = (employee ? state.agents : state.teams).find(item => item.id === id);
+  const item = (kind === "agent" ? state.agents : kind === "role" ? state.roles : state.teams).find(item => item.id === id);
   if (!item) return toast("配置不存在，请刷新列表。", true);
-  const label = employee ? "数字员工" : "团队";
-  openModal(`<h2>删除${label}</h2><p class="modal-intro">确认删除「${esc(item.name)}」？此操作不可恢复。</p><p class="field-hint">仍被团队、任务或沟通历史引用时会拒绝删除；不会删除外部工作文件、Runtime 凭据或改写历史。</p><p data-delete-error role="alert"></p><div class="form-actions"><button class="ghost-button" data-close-modal>取消</button><button class="small-button danger" data-confirm-configuration-delete>删除${label}</button></div>`);
+  const label = kind === "agent" ? "数字员工" : kind === "role" ? "角色" : "团队";
+  const hint = kind === "role"
+    ? "仍有员工绑定（含停用员工）时会拒绝删除并列出绑定员工，请先在员工中解除绑定；已冻结任务中的角色提示词快照保留，历史仍可核验。"
+    : "仍被团队、任务或沟通历史引用时会拒绝删除；不会删除外部工作文件、Runtime 凭据或改写历史。";
+  openModal(`<h2>删除${label}</h2><p class="modal-intro">确认删除「${esc(item.name)}」？此操作不可恢复。</p><p class="field-hint">${hint}</p><p data-delete-error role="alert"></p><div class="form-actions"><button class="ghost-button" data-close-modal>取消</button><button class="small-button danger" data-confirm-configuration-delete>删除${label}</button></div>`);
   const button = $("[data-confirm-configuration-delete]"), message = $("[data-delete-error]");
   button.addEventListener("click", async () => {
     button.disabled = true;
-    try { await api(`/api/${employee ? "agents" : "teams"}/${encodeURIComponent(id)}`, { method: "DELETE" }); if (button.isConnected) closeModal(); toast(`${label}已删除。`); await refresh(); }
+    try { await api(`/api/${kind === "agent" ? "agents" : kind === "role" ? "roles" : "teams"}/${encodeURIComponent(id)}`, { method: "DELETE", body: "{}" }); if (button.isConnected) closeModal(); toast(`${label}已删除。`); await refresh(); }
     catch (error) { if (button.isConnected) { message.textContent = error.message; button.disabled = false; } else toast(error.message, true); }
   });
 }
@@ -2279,7 +2339,7 @@ document.addEventListener("toggle", event => {
 
 function render() {
   renderShell();
-  const views = { overview: renderOverview, tasks: renderTasks, teams: renderTeams, workflows: renderWorkflows, agents: renderAgents, manual: renderManual, workspace: renderWorkspace };
+  const views = { overview: renderOverview, tasks: renderTasks, teams: renderTeams, workflows: renderWorkflows, agents: renderAgents, roles: renderRoles, manual: renderManual, workspace: renderWorkspace };
   if (state.currentView === "communication") communicationUI.mount($("#communication-root"), state, state.selectedChatId);
   if (state.currentView === "settings") settingsUI.mount($("#settings-root"), state.settingsPage);
   if (state.currentView === "mcp-marketplace") mcpMarketplaceUI.mount($("#mcp-marketplace-root"));
@@ -2291,7 +2351,7 @@ $("#agents-search").addEventListener("input", () => {
   state.listPages.agents = 1;
   renderAgents();
 });
-for (const [key, render] of [["teams", renderTeams], ["workflows", renderWorkflows]]) $("#" + key + "-search").addEventListener("input", () => {
+for (const [key, render] of [["teams", renderTeams], ["workflows", renderWorkflows], ["roles", renderRoles]]) $("#" + key + "-search").addEventListener("input", () => {
   state.listPages[key] = 1;
   render();
 });
@@ -2319,7 +2379,7 @@ document.addEventListener("click", (event) => {
   let target;
   if (event.target.closest(".task-actions-menu") || (taskMenu && !event.target.closest("[data-task-more]"))) closeTaskMenu();
   if ((target = el("[data-task-more]"))) return openTaskMenu(target);
-  if ((target = el("[data-pagination] [data-page]"))) { const key = target.closest("[data-pagination]").dataset.pagination; state.listPages[key] = Number(target.dataset.page); ({ tasks: renderTasks, archive: renderTasks, teams: renderTeams, workflows: renderWorkflows, agents: renderAgents })[key]?.(); return; }
+  if ((target = el("[data-pagination] [data-page]"))) { const key = target.closest("[data-pagination]").dataset.pagination; state.listPages[key] = Number(target.dataset.page); ({ tasks: renderTasks, archive: renderTasks, teams: renderTeams, workflows: renderWorkflows, agents: renderAgents, roles: renderRoles })[key]?.(); return; }
   if ((target = el("[data-chat-agent]"))) return communicationUI.open("agent", target.dataset.chatAgent);
   if ((target = el("[data-chat-team]"))) return communicationUI.open("team", target.dataset.chatTeam);
   if ((target = el("#logout-button"))) {
@@ -2353,6 +2413,12 @@ document.addEventListener("click", (event) => {
   if ((target = el('[data-action="new-team"]'))) return newTeamModal();
   if ((target = el('[data-action="new-workflow"]'))) return workflowModal();
   if ((target = el('[data-action="new-agent"]'))) return newAgentModal();
+  if ((target = el('[data-action="new-role"]'))) return newRoleModal();
+  if ((target = el("[data-edit-role]"))) {
+    const role = state.roles.find((item) => item.id === target.dataset.editRole);
+    return role ? roleModal(role) : toast("角色不存在，请刷新列表。", true);
+  }
+  if ((target = el("[data-delete-role]"))) return configurationDeletionModal("role", target.dataset.deleteRole);
   if ((target = el("[data-edit-agent]"))) {
     const agent = state.agents.find((item) => item.id === target.dataset.editAgent);
     return agent ? agentModal(agent) : toast("数字员工不存在。", true);

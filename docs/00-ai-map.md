@@ -2,7 +2,7 @@
 
 独立客户端入口：npm start/dev → apps/electron/main.mjs → 自有 server/index.mjs → web/ 与 client/。全部相对依赖、CLI、Runtime、测试在本仓库；抽取来源、保留边界与发布身份见 docs/23-desktop-extraction.md。服务只由客户端 IPC 启动，直接运行拒绝；无独立 Web 部署。renderer 始终用客户端样式，所有 UI 验收只操作 Electron。
 
-普通沟通：communication.mjs 的回复 schema 仅 reply 必填，转交目标选填；prompts.mjs 不要求空转交字段。Store 仍校验真实候选及单次转交，测试覆盖省略/null/非法字段和目标，任务协议独立不变。
+普通沟通：communication.mjs 的回复 schema 把可空的 handoffToAgentId 与 reply 同列 required（严格 Provider 要求 required 覆盖全部键），null/省略均表示不转交；Store 仍校验真实候选及单次转交，测试覆盖省略/null/非法字段和目标，任务协议独立不变。经理决定被在途投递顺延时，orchestrator 记录说明并向经理入队复核投递，不再静默丢弃；Run 进入验收或确认完成时，Store 取消未执行的平台协调跟进投递并记录审计，归档不再被残留复核投递阻塞。
 
 工作目录：run-files 不再读写 .agentforge-workspace.json 或限定 docs；目录按 path/offset 分页读取，界面按需展开、继续加载和同层重试。CHANGE 将所有业务路径按真实层级合并，工作根与绑定子仓库比较任务初始提交。Workflow artifactPaths 仅为规范相对交付位置，可为空；Store/CLI/提示词同步，不再改写到 docs。执行快照覆盖全部业务路径但保留大小/敏感文件限制，历史冻结文件不迁移。
 
@@ -63,6 +63,8 @@ CLI 连接集中在 cli/client.mjs 的私有 endpoint 发现与实例校验，�
 - 插件来源链接在 `marketplace.mjs` 的安装复制阶段按 `configuration.mjs` 提供的 sourceRoot 展开，执行期仍拒绝链接；CLI 操作帮助同步边界。详情统一滚动区与稳定卡片布局在 `styles.css`，滚轮/键盘、跨行对齐和真实链接 Skill 加载分别由 Electron/插件 E2E 覆盖。
 
 - 协调流程：Store → Orchestrator → Runtime；平台只执行协调决定，不评价业务结果。
+- 角色：Store 拥有 roles 集合与员工 `roleId` 绑定校验/删除拒绝；Task 创建把角色文本冻结为员工快照的 `roleSnapshot`，沟通投递快照在发送/重试时嵌入；`prompts.mjs` 把快照中的角色提示词并入应用系统指令（任务与沟通共用，Claude `--append-system-prompt-file` / Codex `developer_instructions` 通道不变），Runtime 无角色状态。界面 BUILD 组有独立角色目录；CLI 为 `roles` 组与 `agents` 的 `roleId`。
+- 角色侧栏展示：`web/preferences.mjs` 的 NAVIGATION 包含 roles，隐藏选择可重载保留、默认恢复与空 BUILD 分组共用现有偏好逻辑；`web/index.html` 用 SVG 人物名牌替代字体符号，`apps/electron/compact.css` 补同形蒙版以修复实心方块。`test-roles-ui.mjs` 验证偏好及宽窄窗口、两种主题；只改展示，CLI 无变动。
 - 配置能力：HTTP/Store、界面与 CLI 一起核对；当前输入协议见员工配置和 CLI 文档。员工/插件/MCP 目录共用同行搜索工具栏与卡片；插件/MCP 删除经 Store 记录 extensionRemovals 并拒绝当前员工引用，文件保留供冻结任务使用。
 - 插件/MCP：`web/marketplace.mjs` → 认证目录/详情与来源整批 import → Runtime 不可变插件版本及拆分 MCP；员工只选 pluginIds/mcpIds，创建/编辑均可设置 active/inactive。`mcp-launcher.mjs` 通过现有 SDK 桥接 SSE/Streamable HTTP；`plugin-hooks.mjs` 为 Codex 执行完整性校验的选定命令 Hook，Subagent 配置投影到 Trace。Electron 数据仍由 runtime-paths 指向 ~/.agentforge。
 - 市场整批导入解析 Claude/Codex 本地及 HTTPS Git 条目，ref/sha 记录实际来源；配置根先归一祖先别名。清单/Hook/Skill 分 Runtime 投影，目录/CLI 展示静态兼容性与原因，员工绑定拒绝不兼容。Codex MCP cwd 在私有启动器生效，npm/archive/command 来源仍明确拒绝，详见 docs/15。

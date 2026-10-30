@@ -65,6 +65,14 @@ export function communicationCommands(state, save) {
     return item;
   };
   const callId = row => `${row.deliveryId}_${row.attempt}`;
+  // Delivery snapshots embed the bound role's text at send/retry time, exactly
+  // like the employee's own systemPrompt: later role edits apply to subsequent
+  // deliveries, never rewrite queued or historical snapshots.
+  const withRole = (agent) => {
+    if (!agent) return agent;
+    const role = agent.roleId ? (state.roles || []).find(row => row.id === agent.roleId) : null;
+    return { ...copy(agent), roleSnapshot: role ? { id: role.id, name: role.name, prompt: role.prompt } : null };
+  };
   return {
     registerCommunicationAttachment(key, record) {
       conversation(key);
@@ -118,7 +126,7 @@ export function communicationCommands(state, save) {
       const recipients = thread.kind === "agent" ? [thread.targetId] : mentioned.length ? mentioned : roster.filter((member) => member.status === "active").map((member) => member.id);
       if (recipients.some((key) => !roster.some((member) => member.id === key && member.status === "active"))) throw new Error("数字员工已停用");
       const message = { id: id("chat_message"), conversationId: key, clientRequestId, sender: { type: "human", id: "human_operator", name: "你" }, content, attachments, mentionAgentIds: mentioned, visibleToAgentIds: roster.map(member => member.id), createdAt: now(), replyToMessageId: null };
-      const deliveries = recipients.map((agentId) => ({ id: id("chat_delivery"), conversationId: key, messageId: message.id, agentId, agentSnapshot: copy(state.agents.find((row) => row.id === agentId)), status: "queued", attempts: 0, createdAt: now(), updatedAt: now(), nextAttemptAt: null, error: null }));
+      const deliveries = recipients.map((agentId) => ({ id: id("chat_delivery"), conversationId: key, messageId: message.id, agentId, agentSnapshot: withRole(state.agents.find((row) => row.id === agentId)), status: "queued", attempts: 0, createdAt: now(), updatedAt: now(), nextAttemptAt: null, error: null }));
       state.communicationMessages.push(message); state.communicationDeliveries.push(...deliveries); thread.updatedAt = now(); save();
       return copy(message);
     },
@@ -192,7 +200,7 @@ export function communicationCommands(state, save) {
         if (thread.sessions[item.agentId]) thread.sessions[item.agentId].inputThroughMessageId = item.messageId;
         event(item, "completed", "回复已保存");
         if (target) {
-          const child = { id: id("chat_delivery"), conversationId: key, messageId: message.id, agentId: target.id, agentSnapshot: copy(state.agents.find((row) => row.id === target.id)), parentDeliveryId: item.id, rootMessageId: item.messageId,
+          const child = { id: id("chat_delivery"), conversationId: key, messageId: message.id, agentId: target.id, agentSnapshot: withRole(state.agents.find((row) => row.id === target.id)), parentDeliveryId: item.id, rootMessageId: item.messageId,
             status: "queued", attempts: 0, createdAt: now(), updatedAt: now(), nextAttemptAt: null, error: null };
           state.communicationDeliveries.push(child);
           event(item, "handoff_queued", "成员转交已入队", { messageId: message.id, childDeliveryId: child.id, recipientAgentId: target.id, rootMessageId: item.messageId });
@@ -213,7 +221,7 @@ export function communicationCommands(state, save) {
       const item = delivery(key, deliveryId);
       if (item.status !== "failed") throw new Error("只能重试失败回复");
       const current = state.agents.find((row) => row.id === item.agentId);
-      if (current) item.agentSnapshot = copy(current);
+      if (current) item.agentSnapshot = withRole(current);
       item.status = "queued"; item.nextAttemptAt = null; event(item, "retry", "请求重试"); save();
     },
     cancelCommunication(key, deliveryId) {

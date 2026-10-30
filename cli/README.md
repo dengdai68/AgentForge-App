@@ -24,6 +24,8 @@ CLI 仅连接运行中的客户端；源码/安装版统一通过私有 endpoint
 
 `main.mjs` 处理命令；`commands.mjs` 定义帮助与 schema；`client.mjs` 负责认证 HTTP；`output.mjs` 渲染文本/JSON；`password.mjs` 隐藏终端密码输入。`agentforge` 是安装包内的 Electron Node 启动器。
 
+`roles` 组管理员工可共用的纯文本提示词角色（list/get/create/update/delete，update 部分更新，delete 需 `--yes` 且被绑定时拒绝）；员工经 `agents create/update` 的 `roleId` 绑定至多一个角色，显式 null 解绑。角色文本并入应用系统/developer 指令，冻结任务保持原文本；语义详见 docs/03、22。
+
 
 根帮助列命令组，操作帮助列字段，`--json` 返回机器输出。登录态独立持久保存，不读取浏览器 Cookie 或 SQLite。密码仅隐藏交互输入或显式 stdin，不作命令参数。
 

@@ -6,6 +6,8 @@
 
 团队/工作流使用共享目录工具栏，不再在创建操作区下添加列表顶边框；保留条目间分隔，不修改域命令或宿主接口。
 
+角色入口沿用 compact.css 的 SVG 蒙版图标机制，人物名牌轮廓通过 currentColor 着色，避免缺少 --desktop-nav-icon 时背景成为实心方块。侧栏隐藏/恢复仍由共享 preferences.mjs 管理；宽窄窗口和暖白/极简主题在隔离角色 UI 验收中覆盖，不新增宿主接口。
+
 沟通附件、未读与右侧半屏控制台复用认证 HTTP 和共享 renderer，compact.css 仅调整紧凑间距；不新增通用宿主桥。测试使用隔离 HOME、实例与下载目录；真实模型专项只在源码隔离客户端调用已授权 Claude Code，安装包使用受控 CLI。
 
 runtime-paths.mjs 复用 server/data-home.mjs 的纯路径函数，将默认任务根统一为 ~/agentforge，不跟随 desktop/web 应用数据目录。已保存值和已有任务路径不搬动。测试可传入 fixture home 隔离目录。CLI 源码/安装版统一只发现客户端，无 Web 目标；CLI 安装入口仅宿主界面显示。

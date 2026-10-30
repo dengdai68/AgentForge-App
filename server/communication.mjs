@@ -5,7 +5,10 @@ import { diagnostic, withDiagnosticContext } from "./diagnostics.mjs";
 import { communicationPrompt } from "./prompts.mjs";
 import { runClaudeCodeCli, runCodexCli, RuntimeSessionMissingError, redactExternalText, separateRuntimeSession, promptSnapshot } from "./runtime/local-cli.mjs";
 
-const schema = { type: "object", additionalProperties: false, properties: { reply: { type: "string" }, handoffToAgentId: { type: ["string", "null"] } }, required: ["reply"] };
+// Strict Providers (Codex response_format) require every property in
+// `required`; the nullable handoff key satisfies that while null still means
+// no handoff. The Store keeps accepting an omitted key for robustness.
+const schema = { type: "object", additionalProperties: false, properties: { reply: { type: "string" }, handoffToAgentId: { type: ["string", "null"] } }, required: ["reply", "handoffToAgentId"] };
 
 export function createCommunicationService(store, { root, invoke, files } = {}) {
   const active = new Map();

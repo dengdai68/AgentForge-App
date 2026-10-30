@@ -90,7 +90,7 @@ async function executeParsed({ args, flags }, { stdin = process.stdin, stderr = 
   };
   if (operation === 'list') {
     const result = await readList();
-    const items = result[resource.key].filter(item => !flags.search || `${item.name || ''} ${item.description || ''} ${item.mission || ''}`.toLocaleLowerCase().includes(flags.search.toLocaleLowerCase()));
+    const items = result[resource.key].filter(item => !flags.search || `${item.name || ''} ${item.description || ''} ${item.mission || ''} ${item.prompt || ''}`.toLocaleLowerCase().includes(flags.search.toLocaleLowerCase()));
     const selected = flags.all ? items : items.slice((page - 1) * 20, page * 20);
     return { items: selected, total: items.length, page: flags.all ? null : page, pageSize: flags.all ? null : 20, hasMore: !flags.all && page * 20 < items.length };
   }
@@ -106,7 +106,7 @@ async function executeParsed({ args, flags }, { stdin = process.stdin, stderr = 
   }
   let input = await readInput(flags.file, stdin);
   if (group === 'mcps' && operation === 'create' && input.description === undefined) input.description = '';
-  validateInput(input, resource.operationInputs?.[operation]?.schema || resource.schema, 'input', operation === 'update' && ['agents', 'teams'].includes(group));
+  validateInput(input, resource.operationInputs?.[operation]?.schema || resource.schema, 'input', operation === 'update' && ['agents', 'teams', 'roles'].includes(group));
   if(group==='mcps' && operation==='update' && !Object.keys(input).length)throw usage('MCP 编辑至少提供 name、description、content 中一项');
   if (operation === 'create' && group === 'teams' && Object.hasOwn(input, 'status')) throw usage('teams create 不接受 status，创建后为 active；需停用请 update');
   if (operation === 'update' && group === 'agents' && input.runtime) {

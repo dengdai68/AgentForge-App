@@ -339,10 +339,17 @@ test("real pending work still blocks a non-terminal handoff; backoff does not", 
   store.claimDispatch(run.id);
   store.completeDispatch(managerDelivery.id);
 
-  // A freshly queued instruction (new work) keeps priority: followup blocked.
+  // A freshly queued instruction (new work) keeps priority: followup blocked,
+  // and the deferral is revisited by a queued manager redispatch, never dropped.
   store.enqueueDispatch(run.id, { recipientAgentId: "agent_tester", workflowNodeId: "testing", purpose: "instruction", dedupeKey: "fresh-instruction" });
-  assert.equal(scheduleManagerFollowup(store, run.id, managerDelivery, { nextNodeId: "requirements", nextAgentId: "agent_analyst", rationale: "重派" }).scheduled, "blocked");
+  const deferred = scheduleManagerFollowup(store, run.id, managerDelivery, { nextNodeId: "requirements", nextAgentId: "agent_analyst", rationale: "重派" });
+  assert.equal(deferred.scheduled, "blocked"); assert.equal(deferred.requeued, true);
   assert.ok(!store.listDispatches(run.id).some((item) => item.dedupeKey === "handoff:" + managerDelivery.id));
+  const redispatch = store.listDispatches(run.id).find((item) => item.dedupeKey === "redispatch:" + managerDelivery.id);
+  assert.ok(redispatch && redispatch.recipientAgentId === run.manager.id && redispatch.purpose === "manager", "a blocked decision queues a manager re-evaluation");
+  const note = store.getRunWorkspace(run.id).messages.find((item) => redispatch.messageIds.includes(item.id));
+  assert.match(note.content, /暂未建立派工/);
+  assert.equal(dispatchBlocksHandoff(redispatch), false, "the redispatch never blocks the handoff it revisits");
 
   // Once only backoff remains, the non-terminal handoff materializes.
   const fresh = store.listDispatches(run.id).find((item) => item.dedupeKey === "fresh-instruction");
@@ -353,6 +360,59 @@ test("real pending work still blocks a non-terminal handoff; backoff does not", 
   store.retryDispatch(fresh.id, "临时失败", 300000);
   assert.equal(scheduleManagerFollowup(store, run.id, managerDelivery, { nextNodeId: "requirements", nextAgentId: "agent_analyst", rationale: "重派" }).scheduled, "handoff");
   assert.ok(store.listDispatches(run.id).some((item) => item.dedupeKey === "handoff:" + managerDelivery.id));
+});
+
+test("a deferred manager decision materializes after pending work drains instead of stalling the run", () => {
+  const store = createFixtureStore();
+  const run = store.createRun(store.listTasks()[0].id);
+  store.updateRun(run.id, { status: "running" }); store.setTaskStatus(run.taskId, "running");
+  const managerDelivery = store.enqueueDispatch(run.id, { recipientAgentId: run.manager.id, workflowNodeId: "requirements", purpose: "manager", dedupeKey: "manager-decision-3" });
+  store.claimDispatch(run.id);
+  store.completeDispatch(managerDelivery.id);
+
+  // An ordinary instruction queued while the manager was answering keeps
+  // priority; the decision waits and queues its own re-evaluation.
+  const blocker = store.enqueueDispatch(run.id, { recipientAgentId: run.manager.id, workflowNodeId: "requirements", purpose: "instruction", dedupeKey: "queued-instruction" });
+  assert.equal(scheduleManagerFollowup(store, run.id, managerDelivery, { nextNodeId: "requirements", nextAgentId: "agent_analyst", rationale: "安排需求" }).scheduled, "blocked");
+  assert.ok(!store.listDispatches(run.id).some((item) => item.purpose === "node"));
+  const redispatch = store.listDispatches(run.id).find((item) => item.dedupeKey === "redispatch:" + managerDelivery.id);
+  assert.ok(redispatch);
+
+  // The queued instruction drains first, then the re-evaluation can hand off.
+  store.claimDispatch(run.id);
+  store.completeDispatch(blocker.id);
+  assert.equal(scheduleManagerFollowup(store, run.id, redispatch, { nextNodeId: "requirements", nextAgentId: "agent_analyst", rationale: "重新安排" }).scheduled, "handoff");
+  const handoff = store.listDispatches(run.id).find((item) => item.purpose === "node" && item.workflowNodeId === "requirements");
+  assert.ok(handoff && handoff.recipientAgentId === "agent_analyst");
+  store.close();
+});
+
+test("a concluded run settles pending coordination follow-ups so completion and archival stay possible", () => {
+  // QA-06 shape: two manager dispatches interleave — one decision defers
+  // (redispatch queued), the other concludes acceptance. The pending
+  // redispatch must not become a permanent unclaimable blocker.
+  const store = createFixtureStore();
+  const run = store.createRun(store.listTasks()[0].id);
+  store.updateRun(run.id, { status: "running" }); store.setTaskStatus(run.taskId, "running");
+  const a = store.enqueueDispatch(run.id, { recipientAgentId: run.manager.id, workflowNodeId: "requirements", purpose: "manager", dedupeKey: "decision-a" });
+  store.claimDispatch(run.id); store.completeDispatch(a.id);
+  const b = store.enqueueDispatch(run.id, { recipientAgentId: run.manager.id, workflowNodeId: "requirements", purpose: "manager", dedupeKey: "decision-b" });
+  const deferred = scheduleManagerFollowup(store, run.id, a, { nextNodeId: "requirements", nextAgentId: "agent_analyst", rationale: "先处理排队消息" });
+  assert.equal(deferred.requeued, true);
+  const redispatch = store.listDispatches(run.id).find((item) => item.dedupeKey === "redispatch:" + a.id);
+  assert.equal(redispatch.coordinationFollowup, true);
+  assert.equal(redispatch.deferredRevisit, true);
+  assert.equal(store.claimDispatch(run.id).id, b.id); store.completeDispatch(b.id);
+  assert.equal(scheduleManagerFollowup(store, run.id, b, { nextNodeId: null, rationale: "经理提交验收" }).scheduled, "acceptance");
+  assert.equal(store.getDispatch(redispatch.id).status, "cancelled", "acceptance settles the superseded deferred revisit");
+  const settled = store.getRunWorkspace(run.id).events.find((item) => item.type === "dispatch.coordination_followups_settled");
+  assert.deepEqual(settled?.data.dispatchIds, [redispatch.id]);
+  store.confirmRunCompletion(run.id);
+  assert.equal(store.canCompleteRun(run.id), true);
+  store.archiveTask(run.taskId);
+  assert.equal(store.getTask(run.taskId).archivedAt !== null, true);
+  assert.equal(store.getDispatch(redispatch.id).status, "cancelled", "the settled record is preserved, not deleted");
+  store.close();
 });
 
 // R11② (brief v6 §4.6 P3, human ruling message_mvj00z8c_1se): the terminal

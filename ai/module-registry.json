@@ -82,6 +82,7 @@
       "kind": "pure-composition",
       "owner": "orchestration",
       "purpose": "Compose separate application system instructions and current input for Task and communication calls. Full workflow belongs only to the manager; execution environment is system context. Native sessions own conversation history; Store supplies unacknowledged cross-member messages and content-hashed context deltas; actual model activity acknowledges input even if a turn later fails.",
+      "roleContract": "A bound role's shared prompt arrives as snapshot data (agent.roleSnapshot) and joins the persona system-instruction section for both Task and communication composition; it never enters the current input, and this module never resolves roles itself.",
       "sourceOfTruth": ["docs/22-prompt-assembly.md", "docs/03-domain-model.md"],
       "tests": ["tests/prompts.test.mjs", "tests/dispatch-routing.test.mjs", "tests/communication.test.mjs"],
       "allowedDependencies": ["node:crypto"],
@@ -94,6 +95,7 @@
       "pluginUpdates": "plugins updates/check-updates/auto-update expose the shared service scheduler, progressive typed settings and reference-only update receipts; no direct Git or Provider access.",
       "mcpEditing": "mcps update ID sends authenticated partial PUT, preserves unchanged redacted fields, returns new/previous IDs and employee references; frozen work remains unchanged.",
       "promptContract": "Employee systemPrompt help/schema explains native application system/developer instructions; configuration and Task commands/fields/auth remain unchanged.",
+      "roleContract": "The roles group offers list/get/create/update/delete with progressive help/schema and --yes deletion; list --search matches name and prompt like the UI; agents schema/example/notes document roleId (at most one role, explicit null unbinds). Output references roles by ID/name without dumping bound prompt text into other resources.",
       "recordPresentation": "Task collaboration text/JSON excludes client-only tone/statusCode metadata; progressive command and status contracts remain unchanged.",
       "path": "cli/",
       "kind": "authenticated-client",
@@ -323,7 +325,7 @@
     },
     {
       "id": "apps.electron",
-      "workbenchPolish": "Task topbar and same-row actions align with searchable Team/Workflow directories. Compact directory toolbar is 44px; the unchanged owner-supplied ribbon A PNG serves sidebar/Dock and generates packaged macOS ICNS sizes, with its alpha silhouette as the tray template. No host/API expansion.",
+      "workbenchPolish": "Task topbar and same-row actions align with searchable Team/Workflow directories. Compact directory toolbar is 44px; the unchanged owner-supplied ribbon A PNG serves sidebar/Dock and generates packaged macOS ICNS sizes, with its alpha silhouette as the tray template. Roles navigation supplies the same identity-badge SVG mask as the renderer icon, avoiding an unmasked solid square; shared preferences own visibility. No host/API expansion.",
       "communicationWorkbench": "Shared authenticated attachments and half-width conversation console with compact spacing only; browser file input and HTTP, no general IPC. Isolated packaged and real-source acceptance protect operator instance data.",
       "recordPresentation": "Compact shared semantic accents distinguish running member tabs, collaboration types/statuses and private/group senders without Web bubbles; packaged fixtures check active/terminal colors and paginated prompt records.",
       "path": "apps/electron/",
@@ -369,6 +371,7 @@
     {
       "id": "server.communication-store",
       "promptContract": "Native member sessions retain their ID across persona and selected-extension edits; new configuration is reapplied on invocation. Actual Runtime connection/cwd changes reset native context while retaining stored history and confirmed external-message cursor.",
+      "roleContract": "Delivery agent snapshots embed the bound role's text (roleSnapshot) at send and explicit retry time, exactly like the employee systemPrompt; queued deliveries keep their send-time snapshot and role edits never rewrite history or rebuild sessions.",
       "workbenchContract": "Conversation-owned attachment metadata and immutable message references; per-attempt native session binding stays out of audit events. Member-scoped 50-event console projection groups actual deliveries/attempts in one pass and validates content references against the conversation.",
       "path": "server/communication-store.mjs",
       "kind": "domain",
@@ -406,7 +409,7 @@
     },
     {
       "id": "server.communication",
-      "replyContract": "Only reply is required; omitted/null handoffToAgentId means no handoff. Supplied targets retain Store validation; unknown fields and empty replies are rejected. Task coordination and CLI contracts are unchanged.",
+      "replyContract": "The wire schema lists both reply and the nullable handoffToAgentId in required because strict Providers (Codex response_format) reject partial required coverage; null — and, tolerated by the Store, an omitted key — means no handoff. Supplied targets retain Store validation; unknown fields and empty replies are rejected. Task coordination and CLI contracts are unchanged.",
       "instructionDependency": "server/prompts.mjs pure communication composition.",
       "promptContract": "Pure separated system/current composition, environment and eligible peers in system instructions, exact target once, no recent transcript replay; final prepared prompt snapshot remains private.",
       "workbenchContract": "Visible-message attachment paths and conversation root enter the bounded prompt without file bytes. Public runtime content and promptSnapshot persist through Run Files; audit stores references, not session transport or raw bodies.",
@@ -482,6 +485,7 @@
       "id": "server.http-control-plane",
       "mcpEditing": "Authenticated MCP PUT validates a new immutable candidate, resolves all current selectors then commits one Store transaction; failure hides unused candidates without rewriting history.",
       "staticIcon": "Application PNG icon is served as image/png through existing static-root containment and authentication policy; no new file bridge.",
+      "roleRoutes": "Authenticated /api/roles CRUD validates a name/prompt-only whitelist; employeeInput accepts roleId and the Store validates existence. Bootstrap carries the role summary for directory and employee-form rendering.",
       "communicationWorkbench": "Authenticated 20 MiB binary upload and integrity-bound attachment download; member/cursor console, execution-content and prompt endpoints check conversation ownership. No new host bridge or CLI commands.",
       "workspaceSettings": "Authenticated workspace save validates non-root absolute input, creates missing directories recursively and checks canonical directory permissions before Store persistence; failure preserves saved settings and logs original cause. No migration of existing tasks, deletion of files, or new CLI setting command.",
       "path": "server/index.mjs",
@@ -527,6 +531,7 @@
       "pluginUpdates": "Store persists default-enabled checks and a validated 1-1440 minute period (default two), and atomically compares/replaces current employee bindings by installation source with a system audit; frozen work and MCP references remain immutable.",
       "mcpEditing": "replaceMcpExtension atomically compares current employee runtime bindings, rebinds current selectors and retires the previous version with an audit; frozen tasks/deliveries remain unchanged.",
       "promptContract": "Member input cursors confirm only accepted calls. Trace.providerSessionId remains null for unconfirmed Codex placeholders and binds only the real thread ID. Responsibilities derive from actual Dispatches, not static Task nodeAssignments.",
+      "roleContract": "Roles are name plus plain-text prompt records; employees bind at most one via a validated nullable roleId (omitted keeps, explicit null clears). Task creation freezes roleSnapshot (id/name/prompt text) into member and manager snapshots; deletion rejects any current employee reference including inactive ones, listing their names, and frozen history stays verifiable. The retired legacy `role` field is never reused.",
       "path": "server/store.mjs",
       "kind": "domain",
       "owner": "server",
@@ -758,7 +763,7 @@
     {
       "id": "server.orchestrator",
       "instructionDependency": "server/prompts.mjs pure Task composition.",
-      "promptContract": "Manager-only workflow system instructions; environment and compact consultation roster in system layer. Explicit nextAgentId controls dispatch; Store supplies unacknowledged cross-member inputs/context deltas; model content or success acknowledges input. Transient failures have three attempts; deterministic/unknown failures stop.",
+      "promptContract": "Manager-only workflow system instructions; environment and compact consultation roster in system layer. Explicit nextAgentId controls dispatch; Store supplies unacknowledged cross-member inputs/context deltas; model content or success acknowledges input. Transient failures have three attempts; deterministic/unknown failures stop. A non-terminal decision deferred by pending work is recorded and revisited through a queued manager redispatch that never blocks handoffs itself — deferred decisions are never silently dropped. Platform coordination follow-ups carry coordinationFollowup and are settled (cancelled with an audit record) when the run reaches acceptance or human completion, so concluded runs never retain unclaimable coordination dispatches.",
       "path": "server/orchestrator.mjs",
       "kind": "runtime",
       "owner": "orchestration",
@@ -900,7 +905,8 @@
         ]
       },
       "extensionPresentation": "Employee/plugin/MCP cards with same-row search and create/install actions; source-wide plugin installation, lazy component/redacted JSON details with confirmed deletion, and searchable multi-select employee chips. Cards/details/pickers label Claude/Codex support, component applicability and exact incompatibility reasons; Runtime switching preserves but rejects incompatible choices. Empty/loading/no-match/error states occupy a separate full-width region outside the card grid. Human collaboration and communication messages align right based on sender identity only; employees stay left without changing shared projection/CLI fields. Compatibility is static, not a claim of executed account/dependency validation. Removal rules and immutable history belong to Store. Plugin details use one bounded body scroller with sticky component tabs and fixed title/actions, including long overviews; employee/plugin/MCP cards reserve stable heading/description geometry with complete fields available in details/edit. Employee plugin/MCP pickers dismiss on mouse leave, form-outside pointerdown or focus leaving the combo; repeated input clicks reopen, keyboard and candidate traversal remain available, hidden option focus returns to input. Listeners belong to the form, not global per-open document handlers; HTTP/CLI/loading contracts are unchanged.",
-      "cliPresentation": "CLI category always belongs to the client; unavailable host methods report a client error rather than selecting a browser product mode. Task workspace text does not select a Web/Desktop target."
+      "cliPresentation": "CLI category always belongs to the client; unavailable host methods report a client error rather than selecting a browser product mode. Task workspace text does not select a Web/Desktop target.",
+      "rolePresentation": "The BUILD group has a standalone Roles directory with the shared search toolbar, 20-per-page pagination and employee-card styling; role create/edit uses name plus plain-text prompt only, deletion shows reference errors in place, and the employee form offers an optional single role select including unbound. Cards use the avatar column so titles keep full width and show the role ID; same-name roles are distinguished by ID in the employee selector. Roles is registered in NAVIGATION for persisted visibility, empty-group hiding and default restore. Its currentColor SVG identity-badge icon remains legible across themes and narrow navigation without font glyphs; no CLI change."
     },
     {
       "id": "web.manual-graphs",
@@ -946,6 +952,7 @@
     {
       "id": "tests",
       "recordPresentation": "Regression coverage includes partial/running prompt history, interleaved calls, transport-page boundaries, truthful pending/answered colors, stable safe sender tones and exclusion of visual metadata from CLI JSON.",
+      "roleCoverage": "roles.test.mjs covers role CRUD validation and audit events, employee roleId bind/switch/clear with unknown-ID rejection, reference-listing delete rejection including inactive employees, frozen Task/Run roleSnapshot retention after role edit/deletion, communication snapshot embed/refresh semantics, system-instruction-only injection, legacy role-field non-revival and roles CLI help/schema/authenticated CRUD. settings.test.mjs also retains hidden roles across preference persistence; test-roles-ui.mjs verifies actual hide/reload/default restore, empty BUILD groups and SVG icons across themes and native wide/narrow windows.",
       "path": "tests/",
       "kind": "verification",
       "owner": "quality",

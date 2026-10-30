@@ -75,7 +75,7 @@ let communications = createCommunicationService(store, { root: join(runFilesRoot
 const wakeCommunication = (id) => setImmediate(() => { if (!resettingData) communications.kick(id).catch(error => diagnostic("communication.dispatch_error", { conversationId: id, error })); });
 async function employeeInput(request, agentId = null) {
   const input = await readJson(request);
-  const allowed = ['name', 'kind', 'description', 'systemPrompt', 'capabilities', 'status', 'repository', 'runtime'];
+  const allowed = ['name', 'kind', 'description', 'systemPrompt', 'capabilities', 'status', 'repository', 'runtime', 'roleId'];
   if (!input || typeof input !== 'object' || Array.isArray(input) || Object.keys(input).some(key => !allowed.includes(key))) throw new Error('员工配置字段无效，请按当前配置协议提交');
   if (input.runtime !== undefined && (!input.runtime || typeof input.runtime !== 'object' || Array.isArray(input.runtime) || Object.keys(input.runtime).some(key => !['profileId', 'extensionSelection'].includes(key)))) throw new Error('员工Runtime仅接受profileId和extensionSelection；扩展只选择已安装插件和MCP');
   const previous = agentId ? store.listAgents().find(agent => agent.id === agentId)?.runtime : undefined;
@@ -88,6 +88,12 @@ async function employeeInput(request, agentId = null) {
   const resolved = await marketplace.resolve(selection, profile.provider);
   const {provider, model, executable, profile: cliProfile, effort} = profile;
   input.runtime = {profileId, provider, model, executable, profile: cliProfile, effort, ...resolved};
+  return input;
+}
+
+async function roleInput(request) {
+  const input = await readJson(request);
+  if (!input || typeof input !== 'object' || Array.isArray(input) || Object.keys(input).some(key => !['name', 'prompt'].includes(key))) throw new Error('角色配置字段无效，请按当前配置协议提交');
   return input;
 }
 
@@ -267,6 +273,24 @@ async function routeApi(request, response, pathname, searchParams = new URLSearc
   }
   if (request.method === "GET" && pathname === "/api/agents") {
     sendJson(response, 200, { agents: store.listAgents() });
+    return true;
+  }
+  if (request.method === "GET" && pathname === "/api/roles") {
+    sendJson(response, 200, { roles: store.listRoles() });
+    return true;
+  }
+  if (request.method === "POST" && pathname === "/api/roles") {
+    sendJson(response, 201, { role: store.createRole(await roleInput(request)) });
+    return true;
+  }
+  const roleMatch = pathname.match(/^\/api\/roles\/([^/]+)$/);
+  if (roleMatch && request.method === "PUT") {
+    sendJson(response, 200, { role: store.updateRole(roleMatch[1], await roleInput(request)) });
+    return true;
+  }
+  if (roleMatch && request.method === "DELETE") {
+    await readJson(request);
+    sendJson(response, 200, { role: store.deleteRole(roleMatch[1]) });
     return true;
   }
   const historyMatch = pathname.match(/^\/api\/agents\/([^/]+)\/history\/([a-z_]+)$/);
